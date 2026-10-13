@@ -133,8 +133,8 @@ export function DebugPanel({
   ];
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 rounded-[12px] bg-white border border-[#17494D] p-3 shadow-sawal-md text-xs space-y-2 max-w-xs">
-      <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-1.5">
+    <div className="fixed bottom-4 right-4 z-50 rounded-[12px] bg-surface border border-[#17494D] p-3 shadow-sawal-md text-xs space-y-2 max-w-xs">
+      <div className="flex items-center justify-between border-b border-[#DDD0BA] pb-1.5">
         <span className="font-mono font-bold text-[#17494D] uppercase tracking-wider text-[11px] flex items-center gap-1">
           <Bug className="w-3.5 h-3.5" strokeWidth={1.5} />
           <span>Debug State Jumper</span>
@@ -142,7 +142,7 @@ export function DebugPanel({
         <button
           type="button"
           onClick={() => setIsOpen(false)}
-          className="text-[#6B665E] hover:text-[#1C1B19] p-0.5 rounded cursor-pointer"
+          className="text-[#6E6253] hover:text-[#231B12] p-0.5 rounded cursor-pointer"
         >
           <X className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>
@@ -154,7 +154,7 @@ export function DebugPanel({
             key={s.key}
             type="button"
             onClick={() => loadCanned(s.key)}
-            className="px-2 py-1 rounded-[4px] bg-[#F4EFE7] hover:bg-[#E6EFEE] hover:text-[#17494D] text-[#1C1B19] font-mono text-[10px] text-left transition-colors cursor-pointer"
+            className="px-2 py-1 rounded-[4px] bg-[#EBDFCB] hover:bg-[#DCE9E6] hover:text-[#17494D] text-[#231B12] font-mono text-[10px] text-left transition-colors cursor-pointer"
           >
             {s.label}
           </button>

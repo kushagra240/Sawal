@@ -43,7 +43,7 @@ export function SentenceLine({ session }: SentenceLineProps) {
 
   return (
     <div className="py-2">
-      <h2 className="text-xl sm:text-2xl font-serif italic text-[#1C1B19] tracking-tight leading-relaxed">
+      <h2 className="text-xl sm:text-2xl font-serif italic text-[#231B12] tracking-tight leading-relaxed">
         &ldquo;{prefixText}
         <span className="underline decoration-2 decoration-[#17494D] underline-offset-4 text-[#17494D]">
           {underlinedText}

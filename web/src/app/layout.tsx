@@ -49,7 +49,7 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${instrumentSans.variable} ${jetbrainsMono.variable} ${notoSerifDevanagari.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-[#FBF8F3] text-[#1C1B19]">
+      <body className="min-h-full flex flex-col font-sans bg-[#F4EBDD] text-[#231B12]">
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

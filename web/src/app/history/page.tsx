@@ -19,19 +19,19 @@ export default function HistoryPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D8] pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#DDD0BA] pb-4">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E8E2D8] bg-white text-xs sm:text-sm font-semibold text-[#1C1B19] hover:border-[#17494D] transition-colors shadow-sawal-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#DDD0BA] bg-surface text-xs sm:text-sm font-semibold text-[#231B12] hover:border-[#17494D] transition-colors shadow-sawal-sm"
           >
             <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
             <span>Back to Assistant</span>
           </Link>
-          <div className="h-5 w-px bg-[#E8E2D8]" />
+          <div className="h-5 w-px bg-[#DDD0BA]" />
           <div className="flex items-center gap-2">
             <History className="w-5 h-5 text-[#17494D]" strokeWidth={1.5} />
-            <h1 className="text-xl sm:text-2xl font-serif font-bold text-[#1C1B19] tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-serif font-bold text-[#231B12] tracking-tight">
               Session History
             </h1>
           </div>
@@ -41,7 +41,7 @@ export default function HistoryPage() {
           <button
             type="button"
             onClick={clearHistory}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E8E2D8] bg-white text-xs font-semibold text-[#A33A2B] hover:bg-[#FBE9E5] transition-colors cursor-pointer shadow-sawal-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#DDD0BA] bg-surface text-xs font-semibold text-[#A33A2B] hover:bg-[#FBE9E5] transition-colors cursor-pointer shadow-sawal-sm"
           >
             <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
             <span>Clear history</span>
@@ -51,12 +51,12 @@ export default function HistoryPage() {
 
       {/* History List or Empty State */}
       {history.length === 0 ? (
-        <div className="p-12 text-center rounded-[12px] border-2 border-dashed border-[#E8E2D8] bg-white/60 space-y-3">
-          <Clock className="w-8 h-8 mx-auto text-[#6B665E]" strokeWidth={1.5} />
-          <h3 className="text-base font-serif font-bold text-[#1C1B19]">
+        <div className="p-12 text-center rounded-[12px] border-2 border-dashed border-[#DDD0BA] bg-surface/60 space-y-3">
+          <Clock className="w-8 h-8 mx-auto text-[#6E6253]" strokeWidth={1.5} />
+          <h3 className="text-base font-serif font-bold text-[#231B12]">
             No session history yet
           </h3>
-          <p className="text-xs sm:text-sm text-[#6B665E] max-w-sm mx-auto">
+          <p className="text-xs sm:text-sm text-[#6E6253] max-w-sm mx-auto">
             Run requests on the main assistant screen to see them recorded in this browser session.
           </p>
           <div className="pt-2">
@@ -69,7 +69,7 @@ export default function HistoryPage() {
           </div>
         </div>
       ) : (
-        <div className="rounded-[12px] border border-[#E8E2D8] bg-white divide-y divide-[#E8E2D8] shadow-sawal-sm overflow-hidden">
+        <div className="rounded-[12px] border border-[#DDD0BA] bg-surface divide-y divide-[#DDD0BA] shadow-sawal-sm overflow-hidden">
           {history.map(({ session, timestamp }) => {
             const isAct = session.decision?.action === "act" || session.status === "completed";
             const dateStr = new Date(timestamp).toLocaleTimeString([], {
@@ -82,7 +82,7 @@ export default function HistoryPage() {
               <div
                 key={session.session_id}
                 onClick={() => handleOpenSession(session)}
-                className="p-4 sm:p-5 hover:bg-[#FBF8F3] transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                className="p-4 sm:p-5 hover:bg-[#F4EBDD] transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
               >
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
@@ -95,16 +95,16 @@ export default function HistoryPage() {
                     >
                       {isAct ? "ACT" : "ASK"}
                     </span>
-                    <span className="text-[11px] font-mono text-[#6B665E]">
+                    <span className="text-[11px] font-mono text-[#6E6253]">
                       {session.interpretations.length} readings · {session.groups.length}{" "}
                       {session.groups.length === 1 ? "outcome" : "outcomes"}
                     </span>
-                    <span className="text-[11px] font-mono text-[#6B665E]">
+                    <span className="text-[11px] font-mono text-[#6E6253]">
                       · {dateStr}
                     </span>
                   </div>
 
-                  <p className="text-sm sm:text-base font-serif font-bold text-[#1C1B19] group-hover:text-[#17494D] transition-colors">
+                  <p className="text-sm sm:text-base font-serif font-bold text-[#231B12] group-hover:text-[#17494D] transition-colors">
                     {session.request_text}
                   </p>
                 </div>

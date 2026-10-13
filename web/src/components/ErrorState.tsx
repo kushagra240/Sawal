@@ -32,14 +32,14 @@ export function ErrorState({
       </div>
 
       <div className="flex items-start gap-3">
-        <div className="p-2 rounded-full bg-white text-[#A33A2B] shrink-0">
+        <div className="p-2 rounded-full bg-surface text-[#A33A2B] shrink-0">
           <AlertTriangle className="w-5 h-5" strokeWidth={1.5} />
         </div>
         <div className="space-y-1">
           <h3 className="text-base font-serif font-bold text-[#A33A2B]">
             Rehearsal Execution Error
           </h3>
-          <p className="text-xs sm:text-sm text-[#1C1B19] font-sans">
+          <p className="text-xs sm:text-sm text-[#231B12] font-sans">
             {message}
           </p>
         </div>
@@ -49,7 +49,7 @@ export function ErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] bg-white text-[#1C1B19] border border-[#E8E2D8] text-xs font-semibold hover:bg-[#F4EFE7] transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] bg-surface text-[#231B12] border border-[#DDD0BA] text-xs font-semibold hover:bg-[#EBDFCB] transition-colors cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.5} />
           <span>Try again</span>

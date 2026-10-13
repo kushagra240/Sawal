@@ -19,11 +19,11 @@ export function Footer({ session, onOpenShortcuts }: FooterProps) {
     statusDotColor = "#1F6B4A"; // Green for committed
   } else if (!session) {
     commitStatus = "Nothing committed yet";
-    statusDotColor = "#6B665E"; // Muted for idle
+    statusDotColor = "#6E6253"; // Muted for idle
   }
 
   return (
-    <footer className="border-t border-[#E8E2D8] bg-[#FBF8F3] py-3 mt-8 hide-in-presenter text-xs font-mono text-[#6B665E]">
+    <footer className="border-t border-[#DDD0BA] bg-[#F4EBDD] py-3 mt-8 hide-in-presenter text-xs font-mono text-[#6E6253]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-between gap-3">
         {/* Left */}
         <div className="flex items-center gap-2">
@@ -41,7 +41,7 @@ export function Footer({ session, onOpenShortcuts }: FooterProps) {
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: statusDotColor }}
             />
-            <span className="text-[#1C1B19] font-medium">{commitStatus}</span>
+            <span className="text-[#231B12] font-medium">{commitStatus}</span>
           </div>
 
           <span>·</span>
@@ -49,7 +49,7 @@ export function Footer({ session, onOpenShortcuts }: FooterProps) {
           <button
             type="button"
             onClick={onOpenShortcuts}
-            className="hover:text-[#1C1B19] transition-colors cursor-pointer underline underline-offset-2"
+            className="hover:text-[#231B12] transition-colors cursor-pointer underline underline-offset-2"
           >
             Keyboard shortcuts [? to view]
           </button>

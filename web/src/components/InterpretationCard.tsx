@@ -15,7 +15,7 @@ export function InterpretationCard({
   index,
 }: InterpretationCardProps) {
   return (
-    <div className="flex flex-col gap-2.5 p-3.5 sm:p-4 rounded-xl border border-neutral-200 dark:border-neutral-700/80 bg-white dark:bg-neutral-900/90 shadow-xs hover:border-neutral-300 dark:hover:border-neutral-600 transition-all">
+    <div className="flex flex-col gap-2.5 p-3.5 sm:p-4 rounded-xl border border-neutral-200 dark:border-neutral-700/80 bg-surface dark:bg-neutral-900/90 shadow-xs hover:border-neutral-300 dark:hover:border-neutral-600 transition-all">
       {/* Header: Reading # & rationale */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">

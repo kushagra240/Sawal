@@ -16,7 +16,7 @@ export function EffectInspector({ result }: EffectInspectorProps) {
 
   return (
     <section
-      className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 sm:p-6 shadow-xs space-y-4"
+      className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-surface dark:bg-neutral-900 p-5 sm:p-6 shadow-xs space-y-4"
       aria-label="World diff and effect inspector"
     >
       {/* Header */}

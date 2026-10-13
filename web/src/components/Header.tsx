@@ -24,28 +24,28 @@ export function Header({ llmMode, onModeChange, disabled }: HeaderProps) {
   ];
 
   return (
-    <header className="border-b border-[#E8E2D8] bg-[#FBF8F3]/90 backdrop-blur-xs sticky top-0 z-30 transition-all">
+    <header className="border-b border-[#DDD0BA] bg-[#F4EBDD]/90 backdrop-blur-xs sticky top-0 z-30 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
         {/* Left: Brand + Tagline */}
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-baseline gap-2 group">
-            <span className="text-xl sm:text-2xl font-bold tracking-tight text-[#1C1B19]">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-[#231B12]">
               Sawal
             </span>
-            <span className="text-sm sm:text-base font-normal text-[#6B665E] font-[family-name:var(--font-noto-serif-devanagari)]">
+            <span className="text-sm sm:text-base font-normal text-[#6E6253] font-[family-name:var(--font-noto-serif-devanagari)]">
               सवाल
             </span>
           </Link>
 
-          <div className="hidden lg:block h-4 w-px bg-[#E8E2D8]" />
+          <div className="hidden lg:block h-4 w-px bg-[#DDD0BA]" />
 
-          <p className="hidden lg:block text-xs font-normal text-[#6B665E]">
+          <p className="hidden lg:block text-xs font-normal text-[#6E6253]">
             Every AI assistant either guesses or nags.{" "}
-            <span className="text-[#1C1B19] font-medium">Sawal rehearses first.</span>
+            <span className="text-[#231B12] font-medium">Sawal rehearses first.</span>
           </p>
 
           {isMockMode && (
-            <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-[6px] bg-[#E6EFEE] text-[#17494D] border border-[#17494D]/30 font-semibold ml-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-[6px] bg-[#DCE9E6] text-[#17494D] border border-[#17494D]/30 font-semibold ml-1">
               MOCK DATA
             </span>
           )}
@@ -60,7 +60,7 @@ export function Header({ llmMode, onModeChange, disabled }: HeaderProps) {
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-[8px] border transition-all cursor-pointer ${
               presenterMode
                 ? "bg-[#17494D] text-white border-[#17494D]"
-                : "bg-white text-[#6B665E] hover:text-[#1C1B19] border-[#E8E2D8] shadow-sawal-sm"
+                : "bg-surface text-[#6E6253] hover:text-[#231B12] border-[#DDD0BA] shadow-sawal-sm"
             }`}
             title="Toggle Presenter Mode (Key: P)"
           >
@@ -82,7 +82,7 @@ export function Header({ llmMode, onModeChange, disabled }: HeaderProps) {
                   className={`text-[11px] font-mono tracking-wider transition-colors px-1 py-0.5 ${
                     isActive
                       ? "text-[#17494D] font-bold border-b-2 border-[#17494D]"
-                      : "text-[#6B665E] hover:text-[#1C1B19]"
+                      : "text-[#6E6253] hover:text-[#231B12]"
                   }`}
                 >
                   {link.label}
@@ -95,7 +95,7 @@ export function Header({ llmMode, onModeChange, disabled }: HeaderProps) {
           <div
             role="group"
             aria-label="Execution mode toggle"
-            className="inline-flex items-center rounded-[8px] border border-[#E8E2D8] bg-white p-0.5 shadow-sawal-sm"
+            className="inline-flex items-center rounded-[8px] border border-[#DDD0BA] bg-surface p-0.5 shadow-sawal-sm"
           >
             <button
               type="button"
@@ -103,8 +103,8 @@ export function Header({ llmMode, onModeChange, disabled }: HeaderProps) {
               onClick={() => onModeChange("live")}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-sans rounded-[6px] transition-colors cursor-pointer disabled:opacity-50 ${
                 llmMode === "live"
-                  ? "bg-[#E6EFEE] text-[#17494D] font-semibold"
-                  : "text-[#6B665E] hover:text-[#1C1B19]"
+                  ? "bg-[#DCE9E6] text-[#17494D] font-semibold"
+                  : "text-[#6E6253] hover:text-[#231B12]"
               }`}
             >
               {/* Dot is ACCENT TEAL #17494D, NEVER GREEN */}
@@ -120,8 +120,8 @@ export function Header({ llmMode, onModeChange, disabled }: HeaderProps) {
               onClick={() => onModeChange("replay")}
               className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-sans rounded-[6px] transition-colors cursor-pointer disabled:opacity-50 ${
                 llmMode === "replay"
-                  ? "bg-[#E6EFEE] text-[#17494D] font-semibold"
-                  : "text-[#6B665E] hover:text-[#1C1B19]"
+                  ? "bg-[#DCE9E6] text-[#17494D] font-semibold"
+                  : "text-[#6E6253] hover:text-[#231B12]"
               }`}
             >
               <span>Replay</span>

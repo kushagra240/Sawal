@@ -16,7 +16,7 @@ export function ReversibilityBadge({
   if (reversibility === "readonly") {
     return (
       <span
-        style={{ color: "#1F6B4A", backgroundColor: "#E7F3EC" }}
+        style={{ color: "var(--rev-readonly-text)", backgroundColor: "var(--rev-readonly-bg)" }}
         className={`inline-flex items-center gap-1.5 font-medium rounded-[8px] transition-colors ${
           size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs"
         }`}
@@ -31,7 +31,7 @@ export function ReversibilityBadge({
   if (reversibility === "reversible") {
     return (
       <span
-        style={{ color: "#8A5A0B", backgroundColor: "#FBF1DC" }}
+        style={{ color: "var(--rev-undo-text)", backgroundColor: "var(--rev-undo-bg)" }}
         className={`inline-flex items-center gap-1.5 font-medium rounded-[8px] transition-colors ${
           size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs"
         }`}
@@ -46,7 +46,7 @@ export function ReversibilityBadge({
   // irreversible
   return (
     <span
-      style={{ color: "#A33A2B", backgroundColor: "#FBE9E5" }}
+      style={{ color: "var(--rev-cant-text)", backgroundColor: "var(--rev-cant-bg)" }}
       className={`inline-flex items-center gap-1.5 font-semibold rounded-[8px] transition-colors ${
         size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs"
       }`}

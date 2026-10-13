@@ -27,7 +27,7 @@ export function QuestionCard({
     <section
       role="dialog"
       aria-labelledby="question-heading"
-      className="rounded-2xl border-2 border-indigo-500 bg-white dark:bg-neutral-900 p-5 sm:p-6 shadow-lg shadow-indigo-500/10 space-y-5 transition-all"
+      className="rounded-2xl border-2 border-indigo-500 bg-surface dark:bg-neutral-900 p-5 sm:p-6 shadow-lg shadow-indigo-500/10 space-y-5 transition-all"
     >
       {/* Question Header */}
       <div className="flex items-start gap-3">
@@ -86,7 +86,7 @@ export function QuestionCard({
             onChange={(e) => setCustomText(e.target.value)}
             placeholder="Type specific details, person name, or custom preference..."
             disabled={isAnswering}
-            className="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 pr-24 text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 shadow-xs focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60"
+            className="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-surface dark:bg-neutral-900 px-4 py-2.5 pr-24 text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 shadow-xs focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60"
           />
           <button
             type="submit"

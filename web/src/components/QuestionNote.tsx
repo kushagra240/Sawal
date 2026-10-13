@@ -80,10 +80,10 @@ export function QuestionNote({
   };
 
   return (
-    <div className="folded-corner rounded-[12px] border border-[#E8E2D8] bg-white p-6 shadow-sawal-sm space-y-5 transition-all">
+    <div className="folded-corner rounded-[12px] border border-[#DDD0BA] bg-surface p-6 shadow-sawal-sm space-y-5 transition-all">
       {/* Top Header Tag */}
       <div>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[#1C1B19] text-[#FBF8F3] text-[10px] font-mono tracking-wider uppercase font-bold">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[#231B12] text-[#F4EBDD] text-[10px] font-mono tracking-wider uppercase font-bold">
           <span className="w-1.5 h-1.5 rounded-full bg-[#17494D]" />
           <span>CLARIFICATION NEEDED</span>
         </span>
@@ -91,10 +91,10 @@ export function QuestionNote({
 
       {/* Main Question in Fraunces */}
       <div className="space-y-1">
-        <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1B19] leading-tight">
+        <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#231B12] leading-tight">
           {question.text}
         </h3>
-        <p className="text-xs sm:text-sm text-[#6B665E] font-sans">
+        <p className="text-xs sm:text-sm text-[#6E6253] font-sans">
           You have multiple candidate records matching this request in your workspace history.
         </p>
       </div>
@@ -124,34 +124,34 @@ export function QuestionNote({
               }}
               className={`p-4 rounded-[12px] border transition-all cursor-pointer relative ${
                 isSelected
-                  ? "border-[#17494D] bg-[#FBF8F3] ring-2 ring-[#17494D]/20 shadow-sawal-sm"
-                  : "border-[#E8E2D8] bg-white hover:border-[#6B665E] hover:bg-[#FBF8F3]/50"
+                  ? "border-[#17494D] bg-[#F4EBDD] ring-2 ring-[#17494D]/20 shadow-sawal-sm"
+                  : "border-[#DDD0BA] bg-surface hover:border-[#6E6253] hover:bg-[#F4EBDD]/50"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1 flex-1">
                   {/* Matched readings pill */}
                   {opt.matched !== undefined && (
-                    <span className="inline-block text-[11px] font-mono px-2 py-0.5 rounded-[4px] bg-[#F4EFE7] text-[#1C1B19] font-medium mb-1">
+                    <span className="inline-block text-[11px] font-mono px-2 py-0.5 rounded-[4px] bg-[#EBDFCB] text-[#231B12] font-medium mb-1">
                       {opt.matched} readings matched
                     </span>
                   )}
 
                   {/* Label in bold */}
-                  <h4 className="text-base font-bold font-sans text-[#1C1B19]">
+                  <h4 className="text-base font-bold font-sans text-[#231B12]">
                     {opt.label}
                   </h4>
 
                   {/* Description */}
                   {opt.description && (
-                    <p className="text-xs text-[#6B665E] font-sans">
+                    <p className="text-xs text-[#6E6253] font-sans">
                       {opt.description}
                     </p>
                   )}
 
                   {/* Meta items */}
                   {opt.meta && opt.meta.length > 0 && (
-                    <div className="pt-1 space-y-0.5 text-[11px] font-mono text-[#6B665E]">
+                    <div className="pt-1 space-y-0.5 text-[11px] font-mono text-[#6E6253]">
                       {opt.meta.map((m, mIdx) => (
                         <div key={mIdx}>{m}</div>
                       ))}
@@ -164,8 +164,8 @@ export function QuestionNote({
                   <div
                     className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
                       isSelected
-                        ? "border-[#17494D] bg-white"
-                        : "border-[#E8E2D8] bg-transparent"
+                        ? "border-[#17494D] bg-surface"
+                        : "border-[#DDD0BA] bg-transparent"
                     }`}
                   >
                     {isSelected && (
@@ -207,10 +207,10 @@ export function QuestionNote({
       )}
 
       {/* Or Specify Input */}
-      <form onSubmit={handleCustomSubmit} className="pt-3 border-t border-[#E8E2D8]">
+      <form onSubmit={handleCustomSubmit} className="pt-3 border-t border-[#DDD0BA]">
         <label
           htmlFor="specify-input"
-          className="block text-[11px] font-mono uppercase tracking-wider text-[#6B665E] mb-1.5"
+          className="block text-[11px] font-mono uppercase tracking-wider text-[#6E6253] mb-1.5"
         >
           or specify:
         </label>
@@ -222,12 +222,12 @@ export function QuestionNote({
             onChange={(e) => setCustomText(e.target.value)}
             placeholder="Type another recipient or clarify instruction..."
             disabled={isAnswering}
-            className="w-full rounded-[8px] border border-[#E8E2D8] bg-white px-3.5 py-2.5 pr-12 text-xs sm:text-sm text-[#1C1B19] placeholder-[#6B665E]/60 shadow-sawal-sm focus:border-[#17494D] focus:outline-none focus:ring-1 focus:ring-[#17494D]"
+            className="w-full rounded-[8px] border border-[#DDD0BA] bg-surface px-3.5 py-2.5 pr-12 text-xs sm:text-sm text-[#231B12] placeholder-[#6E6253]/60 shadow-sawal-sm focus:border-[#17494D] focus:outline-none focus:ring-1 focus:ring-[#17494D]"
           />
           <button
             type="submit"
             disabled={isAnswering || !customText.trim()}
-            className="absolute right-1.5 top-1.5 bottom-1.5 px-2.5 bg-[#F4EFE7] hover:bg-[#E8E2D8] text-[#1C1B19] rounded-[6px] text-xs font-semibold transition-colors disabled:opacity-40 cursor-pointer"
+            className="absolute right-1.5 top-1.5 bottom-1.5 px-2.5 bg-[#EBDFCB] hover:bg-[#DDD0BA] text-[#231B12] rounded-[6px] text-xs font-semibold transition-colors disabled:opacity-40 cursor-pointer"
             aria-label="Submit specific instruction"
           >
             <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />

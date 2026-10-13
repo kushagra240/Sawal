@@ -4,9 +4,9 @@ import { ArrowLeft, FileQuestion } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[#FBF8F3]">
-      <div className="max-w-md w-full rounded-[12px] border border-[#E8E2D8] bg-white p-8 text-center space-y-4 shadow-sawal-sm">
-        <div className="w-12 h-12 rounded-full bg-[#F4EFE7] flex items-center justify-center mx-auto text-[#6B665E]">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-[#F4EBDD]">
+      <div className="max-w-md w-full rounded-[12px] border border-[#DDD0BA] bg-surface p-8 text-center space-y-4 shadow-sawal-sm">
+        <div className="w-12 h-12 rounded-full bg-[#EBDFCB] flex items-center justify-center mx-auto text-[#6E6253]">
           <FileQuestion className="w-6 h-6" strokeWidth={1.5} />
         </div>
 
@@ -14,10 +14,10 @@ export default function NotFound() {
           <span className="text-xs font-mono uppercase tracking-wider text-[#17494D] font-bold">
             404 · PAGE NOT FOUND
           </span>
-          <h1 className="text-2xl font-serif font-bold text-[#1C1B19]">
+          <h1 className="text-2xl font-serif font-bold text-[#231B12]">
             This route does not exist.
           </h1>
-          <p className="text-xs sm:text-sm text-[#6B665E] font-sans">
+          <p className="text-xs sm:text-sm text-[#6E6253] font-sans">
             The requested URL was not found in the Sawal assistant harness.
           </p>
         </div>

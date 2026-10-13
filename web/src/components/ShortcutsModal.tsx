@@ -37,31 +37,31 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="shortcuts-title"
-      className="fixed inset-0 z-50 bg-[#1C1B19]/30 backdrop-blur-xs flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-[#231B12]/30 backdrop-blur-xs flex items-center justify-center p-4"
     >
-      <div className="w-full max-w-md rounded-[12px] bg-white border border-[#E8E2D8] p-6 shadow-sawal-md space-y-4">
-        <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-3">
+      <div className="w-full max-w-md rounded-[12px] bg-surface border border-[#DDD0BA] p-6 shadow-sawal-md space-y-4">
+        <div className="flex items-center justify-between border-b border-[#DDD0BA] pb-3">
           <h3
             id="shortcuts-title"
-            className="text-base font-bold font-serif text-[#1C1B19]"
+            className="text-base font-bold font-serif text-[#231B12]"
           >
             Keyboard Shortcuts
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-[#6B665E] hover:text-[#1C1B19] p-1 rounded-[6px] hover:bg-[#F4EFE7] transition-colors cursor-pointer"
+            className="text-[#6E6253] hover:text-[#231B12] p-1 rounded-[6px] hover:bg-[#EBDFCB] transition-colors cursor-pointer"
             aria-label="Close shortcuts"
           >
             <X className="w-4 h-4" strokeWidth={1.5} />
           </button>
         </div>
 
-        <div className="divide-y divide-[#E8E2D8] text-xs">
+        <div className="divide-y divide-[#DDD0BA] text-xs">
           {shortcuts.map((s, idx) => (
             <div key={idx} className="py-2.5 flex items-center justify-between gap-4">
-              <span className="text-[#6B665E] font-medium">{s.desc}</span>
-              <kbd className="px-2 py-1 rounded-[6px] bg-[#F4EFE7] border border-[#E8E2D8] font-mono text-[11px] font-bold text-[#1C1B19] shrink-0">
+              <span className="text-[#6E6253] font-medium">{s.desc}</span>
+              <kbd className="px-2 py-1 rounded-[6px] bg-[#EBDFCB] border border-[#DDD0BA] font-mono text-[11px] font-bold text-[#231B12] shrink-0">
                 {s.key}
               </kbd>
             </div>

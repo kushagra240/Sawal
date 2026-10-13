@@ -140,14 +140,14 @@ export function ForkPanel({
   return (
     <section
       ref={containerRef}
-      className="relative w-full rounded-[12px] border border-[#E8E2D8] bg-white shadow-sawal-sm overflow-hidden"
+      className="relative w-full rounded-[12px] border border-[#DDD0BA] bg-surface shadow-sawal-sm overflow-hidden"
       aria-label="Rehearsal Fork Panel"
     >
       {/* Background Dotted Grid */}
       <div className="absolute inset-0 bg-dotted-grid pointer-events-none opacity-80" />
 
       {/* Top Status Strip */}
-      <div className="relative z-20 flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-[#E8E2D8] bg-white/90 backdrop-blur-xs text-xs font-mono">
+      <div className="relative z-20 flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-[#DDD0BA] bg-surface/90 backdrop-blur-xs text-xs font-mono">
         {/* Left Status: Loading vs Rehearsed */}
         <div className="flex items-center gap-2">
           {isLoading ? (
@@ -156,7 +156,7 @@ export function ForkPanel({
               <span>REHEARSING FIVE READINGS...</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-[#1C1B19] font-semibold">
+            <div className="flex items-center gap-2 text-[#231B12] font-semibold">
               <span className="w-2 h-2 rounded-full bg-[#17494D]" />
               <span>{totalReadings} READINGS REHEARSED</span>
             </div>
@@ -168,13 +168,13 @@ export function ForkPanel({
           {!isLoading && totalReadings > 0 && (
             <>
               {/* Readings & Outcomes Forked Pill */}
-              <span className="px-2.5 py-1 rounded-[6px] bg-[#F4EFE7] border border-[#E8E2D8] text-[#1C1B19] font-medium text-[11px]">
+              <span className="px-2.5 py-1 rounded-[6px] bg-[#EBDFCB] border border-[#DDD0BA] text-[#231B12] font-medium text-[11px]">
                 {totalReadings} READINGS · {groups.length}{" "}
                 {groups.length === 1 ? "OUTCOME" : "OUTCOMES FORKED"}
               </span>
 
               {/* k of N drawn indicator */}
-              <span className="px-2.5 py-1 rounded-[6px] bg-[#E6EFEE] border border-[#17494D]/20 text-[#17494D] font-semibold text-[11px]">
+              <span className="px-2.5 py-1 rounded-[6px] bg-[#DCE9E6] border border-[#17494D]/20 text-[#17494D] font-semibold text-[11px]">
                 {drawnCount} OF {totalReadings} DRAWN
               </span>
 
@@ -190,7 +190,7 @@ export function ForkPanel({
                 <button
                   type="button"
                   onClick={onReplayRequest}
-                  className="p-1 rounded-[6px] text-[#6B665E] hover:text-[#1C1B19] hover:bg-[#F4EFE7] transition-colors cursor-pointer"
+                  className="p-1 rounded-[6px] text-[#6E6253] hover:text-[#231B12] hover:bg-[#EBDFCB] transition-colors cursor-pointer"
                   title="Replay rehearsal animation (Key: R)"
                 >
                   <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -206,7 +206,7 @@ export function ForkPanel({
         {/* Loading In-Flight State: Looping dashed threads + slip */}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            <div className="flex flex-col items-center gap-2 p-4 rounded-[12px] bg-white/95 border border-[#E8E2D8] shadow-sawal-md">
+            <div className="flex flex-col items-center gap-2 p-4 rounded-[12px] bg-surface/95 border border-[#DDD0BA] shadow-sawal-md">
               <span className="w-3 h-3 rounded-full bg-[#17494D] animate-ping" />
               <span className="text-xs font-mono uppercase tracking-wider text-[#17494D] font-bold">
                 Rehearsing parallel sandboxes...
@@ -217,7 +217,7 @@ export function ForkPanel({
 
         {/* ZONE 1: Request Slip */}
         <div
-          className="absolute z-10 w-[260px] rounded-[12px] bg-[#FBF8F3] border border-[#E8E2D8] p-4 shadow-sawal-sm transition-all"
+          className="absolute z-10 w-[260px] rounded-[12px] bg-[#F4EBDD] border border-[#DDD0BA] p-4 shadow-sawal-sm transition-all"
           style={{
             left: `${layout.slipX}px`,
             top: `${layout.slipY}px`,
@@ -225,21 +225,21 @@ export function ForkPanel({
         >
           {/* Origin Tab */}
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-[4px] bg-[#E6EFEE] text-[#17494D] font-bold">
+            <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-[4px] bg-[#DCE9E6] text-[#17494D] font-bold">
               ORIGIN
             </span>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-[#6B665E]">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[#6E6253]">
               REQUEST SLIP
             </span>
           </div>
 
           {/* Request Text in Fraunces */}
-          <p className="text-sm sm:text-base font-serif font-bold text-[#1C1B19] leading-snug">
+          <p className="text-sm sm:text-base font-serif font-bold text-[#231B12] leading-snug">
             {session?.request_text || "Send an email to Priya confirming the lab slot."}
           </p>
 
           {/* Ambiguity Footer */}
-          <div className="mt-4 pt-2 border-t border-[#E8E2D8] flex items-center justify-between text-[11px] font-mono text-[#6B665E]">
+          <div className="mt-4 pt-2 border-t border-[#DDD0BA] flex items-center justify-between text-[11px] font-mono text-[#6E6253]">
             <span>
               ambiguity: {groups.length} {groups.length === 1 ? "outcome" : "outcomes"}
             </span>
@@ -255,8 +255,8 @@ export function ForkPanel({
         >
           <defs>
             <linearGradient id={`${componentId}-thread-grad`} x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#1C1B19" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#1C1B19" stopOpacity="0.65" />
+              <stop offset="0%" stopColor="#231B12" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#231B12" stopOpacity="0.65" />
             </linearGradient>
           </defs>
 
@@ -272,7 +272,7 @@ export function ForkPanel({
                   layout.cardX
                 } ${layout.groupAnchors[0].anchor.y}`}
                 fill="none"
-                stroke="#6B665E"
+                stroke="#6E6253"
                 strokeWidth="1.5"
                 strokeDasharray="4 4"
                 opacity="0.55"
@@ -352,7 +352,7 @@ export function ForkPanel({
               top: `${Math.max(50, layout.slipAnchor.y - 65)}px`,
             }}
           >
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#F4EFE7] border border-[#E8E2D8] text-[10px] font-mono text-[#6B665E] shadow-sawal-sm">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#EBDFCB] border border-[#DDD0BA] text-[10px] font-mono text-[#6E6253] shadow-sawal-sm">
               * If it had just guessed ({errorRiskPercent}% error risk)
             </span>
           </div>
@@ -383,8 +383,8 @@ export function ForkPanel({
                 opacity: activeGroupId && thread.group_id !== activeGroupId ? 0.2 : 1,
               }}
             >
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] bg-white border border-[#E8E2D8] text-[10px] font-mono text-[#1C1B19] shadow-sawal-sm">
-                <span className="text-[#6B665E]">•</span>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] bg-surface border border-[#DDD0BA] text-[10px] font-mono text-[#231B12] shadow-sawal-sm">
+                <span className="text-[#6E6253]">•</span>
                 <span>{toolName}</span>
               </span>
             </div>
@@ -406,7 +406,7 @@ export function ForkPanel({
               <div className="w-3.5 h-3.5 rounded-full bg-[#17494D] border-2 border-white shadow-sawal-sm" />
             </div>
 
-            <span className="px-1.5 py-0.5 rounded-[4px] bg-white border border-[#E8E2D8] text-[9px] font-mono uppercase tracking-wider text-[#17494D] font-bold shadow-sawal-sm">
+            <span className="px-1.5 py-0.5 rounded-[4px] bg-surface border border-[#DDD0BA] text-[9px] font-mono uppercase tracking-wider text-[#17494D] font-bold shadow-sawal-sm">
               {isSingleGroup ? "MERGE POINT" : "FORK POINT"}
             </span>
           </div>
@@ -424,10 +424,10 @@ export function ForkPanel({
           return (
             <div
               key={group.id}
-              className={`absolute z-10 rounded-[12px] p-3.5 sm:p-4 bg-white border transition-all shadow-sawal-sm ${
+              className={`absolute z-10 rounded-[12px] p-3.5 sm:p-4 bg-surface border transition-all shadow-sawal-sm ${
                 isGroupActive
                   ? "border-[#17494D] ring-2 ring-[#17494D]/20"
-                  : "border-[#E8E2D8] hover:border-[#6B665E]"
+                  : "border-[#DDD0BA] hover:border-[#6E6253]"
               } ${isRuledOut ? "opacity-25" : "opacity-100"}`}
               style={{
                 width: `${layout.cardW}px`,
@@ -437,7 +437,7 @@ export function ForkPanel({
             >
               {/* Header: Readings Pill + Reversibility Badge */}
               <div className="flex items-center justify-between gap-1.5 mb-2">
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded-[4px] bg-[#F4EFE7] text-[#1C1B19] font-semibold">
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-[4px] bg-[#EBDFCB] text-[#231B12] font-semibold">
                   • {group.size} readings
                 </span>
 
@@ -445,20 +445,20 @@ export function ForkPanel({
               </div>
 
               {/* Title: Effect Summary */}
-              <h4 className="text-xs sm:text-sm font-bold text-[#1C1B19] leading-snug line-clamp-2">
+              <h4 className="text-xs sm:text-sm font-bold text-[#231B12] leading-snug line-clamp-2">
                 {group.label || primaryEffect?.summary || `Outcome Cluster ${gIdx + 1}`}
               </h4>
 
               {/* Subtitle: Detail */}
               {primaryEffect?.detail && (
-                <p className="text-[11px] text-[#6B665E] font-sans mt-1 leading-snug line-clamp-2">
+                <p className="text-[11px] text-[#6E6253] font-sans mt-1 leading-snug line-clamp-2">
                   {primaryEffect.detail}
                 </p>
               )}
 
               {/* Bottom Tag */}
-              <div className="mt-2.5 pt-2 border-t border-[#E8E2D8] flex items-center justify-between text-[10px] font-mono">
-                <span className="text-[#6B665E]">
+              <div className="mt-2.5 pt-2 border-t border-[#DDD0BA] flex items-center justify-between text-[10px] font-mono">
+                <span className="text-[#6E6253]">
                   {isIrreversible ? (
                     <span className="text-[#A33A2B] font-bold">High impact</span>
                   ) : reversibility === "readonly" ? (
@@ -469,7 +469,7 @@ export function ForkPanel({
                 </span>
 
                 {isRuledOut && (
-                  <span className="px-1.5 py-0.5 rounded-[4px] bg-[#F4EFE7] text-[#6B665E] uppercase font-bold text-[9px]">
+                  <span className="px-1.5 py-0.5 rounded-[4px] bg-[#EBDFCB] text-[#6E6253] uppercase font-bold text-[9px]">
                     ruled out
                   </span>
                 )}

@@ -262,7 +262,7 @@ function MainContent() {
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="p-8 text-xs font-mono text-[#6B665E]">Loading Sawal...</div>}>
+    <Suspense fallback={<div className="p-8 text-xs font-mono text-[#6E6253]">Loading Sawal...</div>}>
       <MainContent />
     </Suspense>
   );

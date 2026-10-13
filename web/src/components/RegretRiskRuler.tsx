@@ -59,30 +59,30 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
       : "";
 
   return (
-    <div className="rounded-[12px] border border-[#E8E2D8] bg-white p-5 sm:p-6 shadow-sawal-sm space-y-5">
+    <div className="rounded-[12px] border border-[#DDD0BA] bg-surface p-5 sm:p-6 shadow-sawal-sm space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-3">
+      <div className="flex items-center justify-between border-b border-[#DDD0BA] pb-3">
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-[#17494D]" strokeWidth={1.5} />
-          <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-[#1C1B19]">
+          <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-[#231B12]">
             REGRET &amp; RISK RULER
           </h3>
         </div>
         {/* Removed fake 'v2.4 calibrated' per HONESTY rule */}
-        <span className="text-[11px] font-mono text-[#6B665E]">
+        <span className="text-[11px] font-mono text-[#6E6253]">
           τ = {threshold.toFixed(2)}
         </span>
       </div>
 
       {/* Horizontal Ruler */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-[11px] font-mono text-[#6B665E]">
+        <div className="flex items-center justify-between text-[11px] font-mono text-[#6E6253]">
           <span>Low regret</span>
           <span>Costly if wrong</span>
         </div>
 
         {/* Ruler Bar Track */}
-        <div className="relative h-2.5 w-full rounded-full bg-[#F4EFE7] overflow-visible">
+        <div className="relative h-2.5 w-full rounded-full bg-[#EBDFCB] overflow-visible">
           {/* Subtle gradient fill track */}
           <div
             className="absolute inset-0 rounded-full"
@@ -94,11 +94,11 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
 
           {/* Threshold Tick Marker */}
           <div
-            className="absolute -top-1 bottom-0 w-0.5 bg-[#1C1B19] z-10"
+            className="absolute -top-1 bottom-0 w-0.5 bg-[#231B12] z-10"
             style={{ left: `${thresholdPercent}%` }}
             title={`Threshold τ = ${threshold.toFixed(2)}`}
           >
-            <div className="absolute -top-4 -translate-x-1/2 text-[9px] font-mono text-[#1C1B19] font-bold">
+            <div className="absolute -top-4 -translate-x-1/2 text-[9px] font-mono text-[#231B12] font-bold">
               τ
             </div>
           </div>
@@ -120,7 +120,7 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-[9px] font-mono text-[#6B665E] pt-1">
+        <div className="flex items-center justify-between text-[9px] font-mono text-[#6E6253] pt-1">
           <span>0.00</span>
           <span>{(maxScale * 0.5).toFixed(2)}</span>
           <span>{maxScale.toFixed(2)}</span>
@@ -128,8 +128,8 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
       </div>
 
       {/* Dynamic Status Text */}
-      <div className="space-y-1 text-xs text-[#6B665E] font-sans">
-        <p className="font-medium text-[#1C1B19]">
+      <div className="space-y-1 text-xs text-[#6E6253] font-sans">
+        <p className="font-medium text-[#231B12]">
           {isExceeded ? (
             <span className="text-[#A33A2B] font-bold">
               Threshold exceeded.{" "}
@@ -152,8 +152,8 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
       </div>
 
       {/* Reversibility Profile Across All Rehearsed Readings */}
-      <div className="space-y-2 pt-2 border-t border-[#E8E2D8]">
-        <div className="text-[10px] font-mono uppercase tracking-wider text-[#6B665E]">
+      <div className="space-y-2 pt-2 border-t border-[#DDD0BA]">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-[#6E6253]">
           REVERSIBILITY PROFILE (ACROSS ALL REHEARSED READINGS)
         </div>
 
@@ -200,8 +200,8 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
       </div>
 
       {/* Honesty Rule Guarantee Notice Box */}
-      <div className="p-3 rounded-[8px] bg-[#FBF8F3] border border-[#E8E2D8] text-[11px] font-mono text-[#6B665E] leading-relaxed">
-        <strong className="text-[#1C1B19] block mb-0.5">Sawal Guarantee:</strong>
+      <div className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-[11px] font-mono text-[#6E6253] leading-relaxed">
+        <strong className="text-[#231B12] block mb-0.5">Sawal Guarantee:</strong>
         Rehearsal never touches your real data. Sawal commits only when the readings agree or you answer.
       </div>
     </div>

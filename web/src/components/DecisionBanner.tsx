@@ -89,7 +89,7 @@ export function DecisionBanner({
         </div>
 
         {/* Right: Regret vs Threshold bar */}
-        <div className="lg:w-80 xl:w-96 shrink-0 space-y-2 bg-white/70 dark:bg-neutral-900/60 p-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800">
+        <div className="lg:w-80 xl:w-96 shrink-0 space-y-2 bg-surface/70 dark:bg-neutral-900/60 p-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800">
           <div className="flex items-center justify-between text-xs font-semibold">
             <span className="text-neutral-700 dark:text-neutral-300">
               Expected Regret:{" "}
@@ -121,7 +121,7 @@ export function DecisionBanner({
             />
             {/* Threshold indicator marker */}
             <div
-              className="absolute top-0 bottom-0 w-1 bg-neutral-900 dark:bg-white z-10 shadow-xs"
+              className="absolute top-0 bottom-0 w-1 bg-neutral-900 dark:bg-surface z-10 shadow-xs"
               style={{ left: `${thresholdPercent}%` }}
               title={`Threshold τ = ${threshold}`}
             />

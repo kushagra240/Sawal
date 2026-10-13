@@ -57,19 +57,19 @@ function BenchmarkContent() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
       {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D8] pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#DDD0BA] pb-4">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E8E2D8] bg-white text-xs sm:text-sm font-semibold text-[#1C1B19] hover:border-[#17494D] transition-colors shadow-sawal-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#DDD0BA] bg-surface text-xs sm:text-sm font-semibold text-[#231B12] hover:border-[#17494D] transition-colors shadow-sawal-sm"
           >
             <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
             <span>Back to Assistant</span>
           </Link>
-          <div className="h-5 w-px bg-[#E8E2D8]" />
+          <div className="h-5 w-px bg-[#DDD0BA]" />
           <div className="flex items-center gap-2">
             <BarChart2 className="w-5 h-5 text-[#17494D]" strokeWidth={1.5} />
-            <h1 className="text-xl sm:text-2xl font-serif font-bold text-[#1C1B19] tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-serif font-bold text-[#231B12] tracking-tight">
               Sawal Policy Benchmark
             </h1>
           </div>
@@ -77,7 +77,7 @@ function BenchmarkContent() {
 
         <div className="flex items-center gap-2">
           {sourceType !== "none" && (
-            <span className="text-xs font-mono px-2.5 py-1 rounded-[6px] bg-[#F4EFE7] border border-[#E8E2D8] text-[#6B665E]">
+            <span className="text-xs font-mono px-2.5 py-1 rounded-[6px] bg-[#EBDFCB] border border-[#DDD0BA] text-[#6E6253]">
               Source: {sourceType}
             </span>
           )}
@@ -88,7 +88,7 @@ function BenchmarkContent() {
               setRefreshKey((k) => k + 1);
             }}
             disabled={isLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E8E2D8] bg-white text-xs sm:text-sm font-medium text-[#1C1B19] hover:bg-[#FBF8F3] transition-colors cursor-pointer shadow-sawal-sm disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#DDD0BA] bg-surface text-xs sm:text-sm font-medium text-[#231B12] hover:bg-[#F4EBDD] transition-colors cursor-pointer shadow-sawal-sm disabled:opacity-50"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`}
@@ -123,9 +123,9 @@ function BenchmarkContent() {
 
       {/* Content States */}
       {isLoading ? (
-        <div className="p-12 text-center rounded-[12px] border border-[#E8E2D8] bg-white space-y-3">
+        <div className="p-12 text-center rounded-[12px] border border-[#DDD0BA] bg-surface space-y-3">
           <RefreshCw className="w-8 h-8 mx-auto animate-spin text-[#17494D]" strokeWidth={1.5} />
-          <p className="text-sm font-semibold text-[#1C1B19]">
+          <p className="text-sm font-semibold text-[#231B12]">
             Checking benchmark data sources (API &rarr; file &rarr; sample)...
           </p>
         </div>
@@ -133,15 +133,15 @@ function BenchmarkContent() {
         <BenchmarkChart data={benchmarkData} />
       ) : (
         /* Empty State */
-        <div className="p-10 sm:p-14 text-center rounded-[12px] border-2 border-dashed border-[#E8E2D8] bg-white/60 space-y-4">
-          <div className="w-12 h-12 rounded-full bg-[#F4EFE7] flex items-center justify-center mx-auto text-[#6B665E]">
+        <div className="p-10 sm:p-14 text-center rounded-[12px] border-2 border-dashed border-[#DDD0BA] bg-surface/60 space-y-4">
+          <div className="w-12 h-12 rounded-full bg-[#EBDFCB] flex items-center justify-center mx-auto text-[#6E6253]">
             <FileQuestion className="w-6 h-6" strokeWidth={1.5} />
           </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-serif font-bold text-[#1C1B19]">
+            <h3 className="text-lg font-serif font-bold text-[#231B12]">
               No benchmark run yet
             </h3>
-            <p className="text-xs sm:text-sm text-[#6B665E] max-w-md mx-auto">
+            <p className="text-xs sm:text-sm text-[#6E6253] max-w-md mx-auto">
               Neither the live endpoint (<code>/api/v1/benchmark/summary</code>) nor a real run file (
               <code>public/benchmark_results.json</code>) was found.
             </p>
@@ -165,7 +165,7 @@ export default function BenchmarkPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-12 text-center text-xs font-mono text-[#6B665E]">
+        <div className="p-12 text-center text-xs font-mono text-[#6E6253]">
           Loading benchmark view...
         </div>
       }

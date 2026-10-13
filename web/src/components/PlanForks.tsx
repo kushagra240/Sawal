@@ -31,7 +31,7 @@ export function PlanForks({
           {[0, 1, 2, 3, 4].map((idx) => (
             <div
               key={idx}
-              className="flex flex-col gap-2 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800/40 bg-white dark:bg-neutral-900 shadow-xs animate-pulse"
+              className="flex flex-col gap-2 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800/40 bg-surface dark:bg-neutral-900 shadow-xs animate-pulse"
               style={{ animationDelay: `${idx * 160}ms`, animationDuration: "1.2s" }}
             >
               <div className="h-3 w-16 bg-indigo-200 dark:bg-indigo-800 rounded-md" />

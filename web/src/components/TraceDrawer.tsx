@@ -16,7 +16,7 @@ export function TraceDrawer({ trace }: TraceDrawerProps) {
   }
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs">
+    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-surface dark:bg-neutral-900 overflow-hidden shadow-xs">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}

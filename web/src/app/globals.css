@@ -1,22 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #FBF8F3;
-  --surface: #FFFFFF;
-  --sunken: #F4EFE7;
-  --ink: #1C1B19;
-  --ink-muted: #6B665E;
-  --hairline: #E8E2D8;
+  --paper: #F4EBDD;
+  --surface: #FFFBF4;
+  --sunken: #EBDFCB;
+  --hairline: #DDD0BA;
+  --ink: #231B12;
+  --ink-muted: #6E6253;
   --accent: #17494D;
   --accent-hover: #0F3639;
-  --accent-soft: #E6EFEE;
+  --accent-soft: #DCE9E6;
 
-  /* Reversibility tokens */
-  --rev-readonly-text: #1F6B4A;
+  /* Reversibility tokens - Darkened for verified WCAG AA/AAA contrast on warm backgrounds */
+  --rev-readonly-text: #19583D;
   --rev-readonly-bg: #E7F3EC;
-  --rev-undo-text: #8A5A0B;
+  --rev-undo-text: #734706;
   --rev-undo-bg: #FBF1DC;
-  --rev-cant-text: #A33A2B;
+  --rev-cant-text: #912D1F;
   --rev-cant-bg: #FBE9E5;
 }
 
@@ -30,6 +30,7 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
+  --color-white: var(--surface);
 
   --font-serif: var(--font-fraunces), Georgia, serif;
   --font-sans: var(--font-instrument-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -37,33 +38,33 @@
   --font-devanagari: var(--font-noto-serif-devanagari), var(--font-serif);
 }
 
-/* Light theme only: Ruled-paper texture */
+/* Light theme only: Ruled-paper texture with warm tone */
 body {
-  background-color: #FBF8F3;
-  color: #1C1B19;
+  background-color: var(--paper);
+  color: var(--ink);
   font-family: var(--font-instrument-sans), sans-serif;
   background-image: repeating-linear-gradient(
     to bottom,
     transparent,
     transparent 23px,
-    rgba(28, 27, 25, 0.035) 24px
+    rgba(110, 98, 83, 0.04) 24px
   );
   background-size: 100% 24px;
 }
 
-/* Dotted grid for fork panel */
+/* Warm dotted grid for fork panel */
 .bg-dotted-grid {
-  background-image: radial-gradient(rgba(28, 27, 25, 0.12) 1.2px, transparent 1.2px);
+  background-image: radial-gradient(rgba(110, 98, 83, 0.14) 1.2px, transparent 1.2px);
   background-size: 16px 16px;
 }
 
-/* Custom shadows matching specification */
+/* Warm shadows */
 .shadow-sawal-sm {
-  box-shadow: 0 1px 2px rgba(28, 27, 25, 0.04);
+  box-shadow: 0 1px 2px rgba(60, 40, 10, 0.06);
 }
 
 .shadow-sawal-md {
-  box-shadow: 0 8px 24px rgba(28, 27, 25, 0.06);
+  box-shadow: 0 8px 24px rgba(60, 40, 10, 0.08);
 }
 
 /* Folded corner utility for QuestionNote */
@@ -79,13 +80,13 @@ body {
   height: 0;
   border-style: solid;
   border-width: 0 16px 16px 0;
-  border-color: transparent #E8E2D8 transparent transparent;
+  border-color: transparent #DDD0BA transparent transparent;
   pointer-events: none;
 }
 
 /* Presenter mode magnification */
 .presenter-mode {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
 }
 .presenter-mode .hide-in-presenter {
   display: none !important;
