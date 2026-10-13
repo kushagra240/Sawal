@@ -37,11 +37,11 @@ function MainContent() {
   const [selectedOptionGroupId, setSelectedOptionGroupId] = useState<string | null>(null);
 
   // Sync active session from context if present
-  useEffect(() => {
-    if (activeSession && activeSession !== session) {
-      setSession(activeSession);
-    }
-  }, [activeSession]);
+  const [prevActive, setPrevActive] = useState<Session | null>(activeSession);
+  if (activeSession !== prevActive) {
+    setPrevActive(activeSession);
+    setSession(activeSession);
+  }
 
   // Keyboard shortcut listener: P, ?, R
   useEffect(() => {
@@ -210,7 +210,7 @@ function MainContent() {
                   action={session.decision.action}
                   result={session.result}
                   groups={session.groups}
-                  isCommittedAnswer={Boolean((session as any)._chosenGroupId)}
+                  isCommittedAnswer={Boolean(session._chosenGroupId)}
                 />
               )}
             </div>
