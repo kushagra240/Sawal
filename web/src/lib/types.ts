@@ -2,11 +2,14 @@ export type LlmMode = "live" | "replay";
 export type ToolMode = "mock" | "live";
 export type Reversibility = "readonly" | "reversible" | "irreversible";
 export type PolicyName = "always_act" | "always_ask" | "ask_if_model_unsure" | "sawal";
+export type DecisionAction = "act" | "ask";
 
 export interface ToolCall {
   tool: string;
   args: Record<string, unknown>;
 }
+
+export type PlanStep = ToolCall;
 
 export interface Effect {
   summary: string;
@@ -46,7 +49,7 @@ export interface QuestionOption {
   label: string;
   value?: string;
   target_group_ids?: string[];
-  matched?: boolean;
+  matched?: number | boolean;
   description?: string;
   meta?: string[];
 }
@@ -171,10 +174,23 @@ export interface BenchmarkPolicy {
   irreversible_error_rate: number;
 }
 
+export type PolicyMetric = BenchmarkPolicy;
+
+export interface SweepPoint {
+  tau: number;
+  questions_per_task: number;
+  wrong_action_rate: number;
+}
+
+export interface SessionError {
+  message: string;
+  code?: string;
+}
+
 export interface BenchmarkSummary {
   meta: { n_tasks: number; model: string; date: string };
   policies: BenchmarkPolicy[];
-  sweep: Array<{ tau: number; questions_per_task: number; wrong_action_rate: number }>;
+  sweep: SweepPoint[];
   execution_mode?: string;
   tasks_count?: number;
   timestamp?: string;

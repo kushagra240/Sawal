@@ -1,0 +1,215 @@
+{
+  "id": "e57655fb-ed64-473d-a0b3-6d49de93b499",
+  "user_id": "guest",
+  "request_text": "Send an email to Priya confirming the lab slot.",
+  "status": "asked",
+  "decision": {
+    "action": "ask",
+    "expected_regret": 0.4,
+    "tau": 0.25,
+    "chosen_group_id": "grp-0d46bcc221",
+    "groups": [
+      {
+        "id": "grp-0d46bcc221",
+        "mass": 0.6,
+        "interpretation_ids": [
+          "interp-01",
+          "interp-02",
+          "interp-03"
+        ],
+        "canonical_effects": [
+          {
+            "entity_type": "email",
+            "operation": "send",
+            "key_fields": {
+              "to": "priya.sharma@fincorp.internal",
+              "subject": "Priya confirming the lab slot"
+            },
+            "reversibility_weight": 1
+          }
+        ],
+        "signature": "0d46bcc221a807999af0e95264f336ae718d34152eea2805affaede44772cfec"
+      },
+      {
+        "id": "grp-3b97f0091d",
+        "mass": 0.4,
+        "interpretation_ids": [
+          "interp-04",
+          "interp-05"
+        ],
+        "canonical_effects": [
+          {
+            "entity_type": "email",
+            "operation": "send",
+            "key_fields": {
+              "to": "priya.kulkarni@academics.internal",
+              "subject": "Priya confirming the lab slot"
+            },
+            "reversibility_weight": 1
+          }
+        ],
+        "signature": "3b97f0091dd6d3edd0d2426f87fcfd8bdb93f81a1ff68e8005f4403eba038894"
+      }
+    ]
+  },
+  "interpretations": [
+    {
+      "id": "interp-01",
+      "rationale": "Interprets the recipient as Priya Sharma.",
+      "slots": {
+        "contact_id": "priya-sharma"
+      },
+      "plan": [
+        {
+          "tool": "email.send",
+          "args": {
+            "to": "priya.sharma@fincorp.internal",
+            "subject": "Priya confirming the lab slot",
+            "body": "Send an email to Priya confirming the lab slot."
+          }
+        }
+      ],
+      "signature": "0d46bcc221a807999af0e95264f336ae718d34152eea2805affaede44772cfec",
+      "group_id": "grp-0d46bcc221"
+    },
+    {
+      "id": "interp-02",
+      "rationale": "Interprets the recipient as Priya Sharma.",
+      "slots": {
+        "contact_id": "priya-sharma"
+      },
+      "plan": [
+        {
+          "tool": "email.send",
+          "args": {
+            "to": "priya.sharma@fincorp.internal",
+            "subject": "Priya confirming the lab slot",
+            "body": "Send an email to Priya confirming the lab slot."
+          }
+        }
+      ],
+      "signature": "0d46bcc221a807999af0e95264f336ae718d34152eea2805affaede44772cfec",
+      "group_id": "grp-0d46bcc221"
+    },
+    {
+      "id": "interp-03",
+      "rationale": "Interprets the recipient as Priya Sharma.",
+      "slots": {
+        "contact_id": "priya-sharma"
+      },
+      "plan": [
+        {
+          "tool": "email.send",
+          "args": {
+            "to": "priya.sharma@fincorp.internal",
+            "subject": "Priya confirming the lab slot",
+            "body": "Send an email to Priya confirming the lab slot."
+          }
+        }
+      ],
+      "signature": "0d46bcc221a807999af0e95264f336ae718d34152eea2805affaede44772cfec",
+      "group_id": "grp-0d46bcc221"
+    },
+    {
+      "id": "interp-04",
+      "rationale": "Interprets the recipient as Priya Kulkarni.",
+      "slots": {
+        "contact_id": "priya-kulkarni"
+      },
+      "plan": [
+        {
+          "tool": "email.send",
+          "args": {
+            "to": "priya.kulkarni@academics.internal",
+            "subject": "Priya confirming the lab slot",
+            "body": "Send an email to Priya confirming the lab slot."
+          }
+        }
+      ],
+      "signature": "3b97f0091dd6d3edd0d2426f87fcfd8bdb93f81a1ff68e8005f4403eba038894",
+      "group_id": "grp-3b97f0091d"
+    },
+    {
+      "id": "interp-05",
+      "rationale": "Interprets the recipient as Priya Kulkarni.",
+      "slots": {
+        "contact_id": "priya-kulkarni"
+      },
+      "plan": [
+        {
+          "tool": "email.send",
+          "args": {
+            "to": "priya.kulkarni@academics.internal",
+            "subject": "Priya confirming the lab slot",
+            "body": "Send an email to Priya confirming the lab slot."
+          }
+        }
+      ],
+      "signature": "3b97f0091dd6d3edd0d2426f87fcfd8bdb93f81a1ff68e8005f4403eba038894",
+      "group_id": "grp-3b97f0091d"
+    }
+  ],
+  "question": {
+    "id": "q-slot-contact_id-01",
+    "slot_name": "contact_id",
+    "question": "Which contact did you mean?",
+    "options": [
+      {
+        "id": "opt-priya-sharma",
+        "label": "Priya Sharma (Manager)",
+        "value": "priya-sharma",
+        "target_group_ids": [
+          "grp-0d46bcc221"
+        ]
+      },
+      {
+        "id": "opt-priya-kulkarni",
+        "label": "Priya Kulkarni (Classmate / Study Partner)",
+        "value": "priya-kulkarni",
+        "target_group_ids": [
+          "grp-3b97f0091d"
+        ]
+      }
+    ]
+  },
+  "result": null,
+  "trace": [
+    {
+      "id": "trc-ab7aac1f",
+      "kind": "INTERPRETATIONS_GENERATED",
+      "payload": {
+        "count": 5,
+        "valid_count": 5
+      },
+      "timestamp": "2026-10-13T06:36:45Z"
+    },
+    {
+      "id": "trc-a80076b1",
+      "kind": "DRY_RUN_COMPLETED",
+      "payload": {
+        "valid_count": 5,
+        "groups": 2
+      },
+      "timestamp": "2026-10-13T06:36:45Z"
+    },
+    {
+      "id": "trc-427a74c1",
+      "kind": "REGRET_CALCULATED",
+      "payload": {
+        "expected_regret": 0.4,
+        "tau": 0.25
+      },
+      "timestamp": "2026-10-13T06:36:45Z"
+    },
+    {
+      "id": "trc-704b5208",
+      "kind": "CLARIFICATION_REQUIRED",
+      "payload": {
+        "slot": "contact_id"
+      },
+      "timestamp": "2026-10-13T06:36:45Z"
+    }
+  ],
+  "created_at": "2026-10-13T06:36:45Z",
+  "updated_at": "2026-10-13T06:36:45Z"
+}

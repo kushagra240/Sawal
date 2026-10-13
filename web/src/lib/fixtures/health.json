@@ -1,0 +1,7 @@
+{
+  "status": "ok",
+  "timestamp": "2026-10-13T06:36:45.901452Z",
+  "version": "1.0.0",
+  "storage_backend": "memory",
+  "llm_mode": "auto"
+}
