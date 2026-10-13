@@ -1,16 +1,24 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Clock, History, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, History, ShieldCheck, Trash2 } from "lucide-react";
+import { fetchAudit } from "@/lib/api";
 import { useSessionContext } from "@/lib/sessionContext";
-import { Session } from "@/lib/types";
+import { AuditEvent, Session } from "@/lib/types";
 
 export default function HistoryPage() {
   const router = useRouter();
   const { history, clearHistory, turns, addTurn, setActiveTurnId, setActiveSession } =
     useSessionContext();
+  const [audit, setAudit] = useState<AuditEvent[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    fetchAudit().then((items) => { if (active) setAudit(items); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   const handleOpenSession = (sess: Session, entryTimestamp: number) => {
     const existing = turns.find((t) => t.session?.session_id === sess.session_id);
@@ -131,6 +139,28 @@ export default function HistoryPage() {
           })}
         </div>
       )}
+
+      <section className="rounded-[12px] border border-[#DDD0BA] bg-surface shadow-sawal-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#DDD0BA] flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#17494D]" strokeWidth={1.5} />
+          <h2 className="font-serif font-bold text-[#231B12]">Live activity audit</h2>
+        </div>
+        {audit.length === 0 ? (
+          <p className="p-5 text-xs text-[#6E6253]">No live provider activity recorded.</p>
+        ) : (
+          <div className="divide-y divide-[#DDD0BA]">
+            {audit.map((event) => (
+              <div key={event.id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                <div>
+                  <span className="font-mono font-bold text-[#17494D]">{event.event_type.replaceAll("_", " ")}</span>
+                  {event.tool && <span className="ml-2 text-[#231B12]">{event.tool}</span>}
+                </div>
+                <span className="font-mono text-[10px] text-[#6E6253]">{new Date(event.created_at).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

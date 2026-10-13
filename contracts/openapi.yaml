@@ -261,6 +261,123 @@ paths:
         '504':
           $ref: '#/components/responses/GatewayTimeoutError'
 
+  /sessions/{id}/confirm:
+    post:
+      summary: Confirm and execute a pending live action
+      description: Executes only the exact previewed action. Reusing the idempotency key returns the original result without repeating the side effect.
+      operationId: confirmLiveAction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfirmActionRequest' }
+      responses:
+        '200':
+          description: Updated session with the provider result.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+
+  /sessions/{id}/cancel:
+    post:
+      summary: Cancel a pending live action
+      operationId: cancelLiveAction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CancelActionRequest' }
+      responses:
+        '200':
+          description: Updated cancelled session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+
+  /actions:
+    get:
+      summary: List the current user's live actions
+      operationId: listActions
+      responses:
+        '200': { description: Action history, including pending and terminal states. }
+
+  /audit:
+    get:
+      summary: List the current user's append-only audit events
+      operationId: listAuditEvents
+      responses:
+        '200': { description: Audit event list. }
+
+  /expenses:
+    get:
+      summary: List persisted expenses for the current user
+      operationId: listExpenses
+      responses:
+        '200': { description: Expense list. }
+
+  /providers/capabilities:
+    get:
+      summary: Report connected and implemented live-provider capabilities
+      operationId: getProviderCapabilities
+      responses:
+        '200': { description: Capability status without claiming unsupported integrations. }
+
+  /connections:
+    get:
+      summary: List the current user's provider connection status
+      operationId: listConnections
+      responses:
+        '200': { description: Connections, scopes, and token persistence status. }
+
+  /oauth/google/connect:
+    get:
+      summary: Start Google OAuth with PKCE and one-time state
+      operationId: connectGoogle
+      responses:
+        '200': { description: Google authorization URL. }
+        '503': { $ref: '#/components/responses/InternalServerError' }
+
+  /oauth/google/callback:
+    get:
+      summary: Complete the Google OAuth authorization-code flow
+      operationId: googleOAuthCallback
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: { type: string }
+        - name: state
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '302': { description: Redirects to the configured frontend. }
+        '400': { $ref: '#/components/responses/BadRequestError' }
+        '502': { $ref: '#/components/responses/BadGatewayError' }
+
+  /connections/google:
+    delete:
+      summary: Revoke and remove the current user's Google connection
+      operationId: disconnectGoogle
+      responses:
+        '200': { description: Google connection removed. }
+        '502': { $ref: '#/components/responses/BadGatewayError' }
+
   /world:
     get:
       summary: Get user world state
@@ -603,6 +720,30 @@ components:
           minLength: 3
           maxLength: 1000
           example: "Reserve a table for 4 at Deccan Bistro around 8 PM"
+        llm_mode:
+          type: [string, "null"]
+          enum: [mock, live, auto, null]
+        tool_mode:
+          type: string
+          enum: [mock, live]
+          default: mock
+
+    ConfirmActionRequest:
+      type: object
+      required: [action_id, idempotency_key]
+      properties:
+        action_id:
+          type: string
+        idempotency_key:
+          type: string
+          minLength: 16
+
+    CancelActionRequest:
+      type: object
+      required: [action_id]
+      properties:
+        action_id:
+          type: string
 
     AnswerQuestionRequest:
       type: object
@@ -641,7 +782,13 @@ components:
           type: string
         status:
           type: string
-          enum: [asked, completed, failed]
+          enum: [asked, awaiting_confirmation, completed, cancelled, failed]
+        tool_mode:
+          type: string
+          enum: [mock, live]
+        action:
+          type: [object, "null"]
+          additionalProperties: true
         decision:
           $ref: '#/components/schemas/Decision'
         interpretations:

@@ -99,13 +99,19 @@ def _prompt(request_text: str, world: dict, count: int) -> str:
         f"Generate up to {count} distinct valid interpretations. "
         "Allowed tools only: "
         "contacts.search(query), "
+        "email.search(query,max_results), "
+        "email.read(message_id), "
         "calendar.list(start_date,end_date), "
+        "calendar.check_availability(start_time,end_time), "
         "calendar.create_event(title,start_time,end_time), "
+        "calendar.update_event(event_id,title,start_time,end_time), "
+        "calendar.cancel_event(event_id), "
         "restaurants.search(query), "
         "restaurants.book(restaurant_id,date_time,party_size), "
         "email.draft(to,subject,body), "
         "email.send(to,subject,body), "
-        "expenses.log(amount,currency,description). "
+        "expenses.log(amount,currency,description), "
+        "expenses.list(limit). "
         "Use IDs and email addresses that exist in the supplied world. "
         "Never invent contacts. "
         "Allowed ambiguity slots: contact_id, restaurant_id, date_time, "
@@ -352,6 +358,10 @@ def _gemini_call(model: str, prompt: str) -> str:
         ],
         "generationConfig": {
             "temperature": 0.2,
+            "maxOutputTokens": int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "2048")),
+            "thinkingConfig": {
+                "thinkingLevel": os.getenv("GEMMA_THINKING_LEVEL", "minimal"),
+            },
         },
     }
 
