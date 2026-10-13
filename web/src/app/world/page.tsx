@@ -14,29 +14,40 @@ import {
 import { ReversibilityBadge } from "@/components/ReversibilityBadge";
 import { fetchLiveWorld, resetLiveWorld } from "@/lib/api";
 import { useSessionContext } from "@/lib/sessionContext";
-import { Reversibility } from "@/lib/types";
+import {
+  LiveCalendarEvent,
+  LiveEmail,
+  LiveExpense,
+  LiveReservation,
+  LiveWorldState,
+  Reversibility,
+} from "@/lib/types";
 
 export default function WorldPage() {
   const { accumulatedWorldDiff, clearWorld, isMockMode } = useSessionContext();
-  const [liveWorld, setLiveWorld] = useState<Record<string, any> | null>(null);
+  const [liveWorld, setLiveWorld] = useState<LiveWorldState | null>(null);
   const [isLoadingLive, setIsLoadingLive] = useState(!isMockMode);
   const [isResetting, setIsResetting] = useState(false);
 
-  const loadLiveWorld = async () => {
-    if (isMockMode) return;
-    setIsLoadingLive(true);
-    try {
-      const data = await fetchLiveWorld();
-      setLiveWorld(data);
-    } catch {
-      setLiveWorld(null);
-    } finally {
+  useEffect(() => {
+    let active = true;
+    if (!isMockMode) {
+      fetchLiveWorld()
+        .then((data) => {
+          if (active) setLiveWorld(data as LiveWorldState);
+        })
+        .catch(() => {
+          if (active) setLiveWorld(null);
+        })
+        .finally(() => {
+          if (active) setIsLoadingLive(false);
+        });
+    } else {
       setIsLoadingLive(false);
     }
-  };
-
-  useEffect(() => {
-    loadLiveWorld();
+    return () => {
+      active = false;
+    };
   }, [isMockMode]);
 
   const handleReset = async () => {
@@ -44,7 +55,7 @@ export default function WorldPage() {
     if (!isMockMode) {
       try {
         const resetRes = await resetLiveWorld();
-        setLiveWorld(resetRes);
+        setLiveWorld(resetRes as LiveWorldState);
       } catch (err) {
         console.error("Failed to reset live world:", err);
       }
@@ -153,7 +164,7 @@ export default function WorldPage() {
                 </p>
               ) : (
                 <div className="space-y-2.5">
-                  {calendarEvents.map((evt: any, i: number) => (
+                  {calendarEvents.map((evt: LiveCalendarEvent, i: number) => (
                     <div
                       key={evt.id || i}
                       className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1"
@@ -216,7 +227,7 @@ export default function WorldPage() {
                 </p>
               ) : (
                 <div className="space-y-2.5">
-                  {emails.map((em: any, i: number) => (
+                  {emails.map((em: LiveEmail, i: number) => (
                     <div
                       key={em.id || i}
                       className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1"
@@ -235,7 +246,7 @@ export default function WorldPage() {
                       </p>
                     </div>
                   ))}
-                  {reservations.map((res: any, i: number) => (
+                  {reservations.map((res: LiveReservation, i: number) => (
                     <div
                       key={res.id || i}
                       className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1"
@@ -303,7 +314,7 @@ export default function WorldPage() {
                 </p>
               ) : (
                 <div className="space-y-2.5">
-                  {expenses.map((exp: any, i: number) => (
+                  {expenses.map((exp: LiveExpense, i: number) => (
                     <div
                       key={exp.id || i}
                       className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1"

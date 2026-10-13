@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Calendar, CreditCard, Mail } from "lucide-react";
 import { fetchLiveWorld } from "@/lib/api";
 import { useSessionContext } from "@/lib/sessionContext";
-import { WorldDiffItem } from "@/lib/types";
+import { LiveWorldState, WorldDiffItem } from "@/lib/types";
 
 interface WorldStripProps {
   worldDiff?: WorldDiffItem[];
@@ -12,12 +12,12 @@ interface WorldStripProps {
 
 export function WorldStrip({ worldDiff = [] }: WorldStripProps) {
   const { isMockMode } = useSessionContext();
-  const [liveWorld, setLiveWorld] = useState<Record<string, any> | null>(null);
+  const [liveWorld, setLiveWorld] = useState<LiveWorldState | null>(null);
 
   useEffect(() => {
     if (isMockMode) return;
     fetchLiveWorld()
-      .then((data) => setLiveWorld(data))
+      .then((data) => setLiveWorld(data as LiveWorldState))
       .catch(() => setLiveWorld(null));
   }, [isMockMode, worldDiff]);
 
