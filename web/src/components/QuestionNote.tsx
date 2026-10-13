@@ -80,7 +80,7 @@ export function QuestionNote({
   };
 
   return (
-    <div className="folded-corner rounded-[12px] border border-[#DDD0BA] bg-surface p-6 shadow-sawal-sm space-y-5 transition-all">
+    <div className="folded-corner rounded-[12px] border border-[#DDD0BA] bg-surface p-4 sm:p-5 shadow-sawal-sm space-y-4 transition-all">
       {/* Top Header Tag */}
       <div>
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[#231B12] text-[#F4EBDD] text-[10px] font-mono tracking-wider uppercase font-bold">

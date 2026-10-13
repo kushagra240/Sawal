@@ -88,7 +88,7 @@ export function ChatColumn({
       {/* Messages Scroll Area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4"
         style={{ scrollBehavior: "smooth" }}
       >
         {/* 1. Greeting Message (always visible at top of conversation) */}
@@ -97,7 +97,7 @@ export function ChatColumn({
             <div className="w-7 h-7 rounded-full bg-[#17494D] text-surface flex items-center justify-center font-devanagari text-xs font-bold shrink-0 shadow-sawal-sm">
               स
             </div>
-            <div className="flex-1 bg-surface border border-[#DDD0BA] rounded-[12px] rounded-tl-[4px] p-4 shadow-sawal-sm space-y-3">
+            <div className="flex-1 min-w-0 bg-surface border border-[#DDD0BA] rounded-[12px] rounded-tl-[4px] p-4 shadow-sawal-sm space-y-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-serif font-bold text-sm text-[#231B12]">
@@ -147,10 +147,10 @@ export function ChatColumn({
             <div
               key={turn.id}
               onClick={() => onSelectTurn(turn.id)}
-              className={`space-y-3 cursor-pointer rounded-[8px] transition-all ${
+              className={`space-y-3 cursor-pointer rounded-[8px] transition-all p-1.5 ${
                 isActive
-                  ? "ring-1 ring-[#17494D]/30 p-1 -m-1"
-                  : "opacity-90 hover:opacity-100"
+                  ? "ring-1 ring-[#17494D]/40 bg-[#F4EBDD]/30"
+                  : "opacity-90 hover:opacity-100 hover:bg-[#F4EBDD]/15"
               }`}
             >
               {/* User Message Bubble */}
@@ -224,6 +224,57 @@ export function ChatColumn({
                     <div className="flex items-center gap-1.5 text-[10px] font-mono text-[#17494D] pl-9">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#17494D]" />
                       <span>Showing on Rehearsal Stage</span>
+                    </div>
+                  )}
+
+                  {/* Sawal, decision sentence message */}
+                  {session.decision && (
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-[#17494D] text-surface flex items-center justify-center font-devanagari text-xs font-bold shrink-0 shadow-sawal-sm">
+                        स
+                      </div>
+                      <div className="bg-surface border border-[#DDD0BA] rounded-[12px] rounded-tl-[4px] px-3.5 py-2.5 shadow-sawal-sm text-xs font-serif italic text-[#231B12] leading-relaxed">
+                        {(() => {
+                          const totalReadings = session.interpretations.length;
+                          const numGroups = session.groups.length;
+                          const isAct =
+                            session.decision?.action === "act" || session.status === "completed";
+                          const hasIrreversible = session.groups.some((g) =>
+                            g.effects.some((e) => e.reversibility === "irreversible")
+                          );
+
+                          let prefix = "";
+                          let underlined = "";
+
+                          if (isAct) {
+                            if (numGroups <= 1) {
+                              prefix = `All ${totalReadings} readings lead to the same outcome, `;
+                              underlined = "so I'm acting.";
+                            } else {
+                              prefix = `${totalReadings} readings across ${numGroups} outcomes, but all effects can be undone, `;
+                              underlined = "so I'm acting.";
+                            }
+                          } else {
+                            if (hasIrreversible) {
+                              prefix = `${totalReadings} readings, ${numGroups} different outcomes. One of them can't be undone, `;
+                              underlined = "so I'm asking.";
+                            } else {
+                              prefix = `${totalReadings} readings, ${numGroups} different outcomes with divergent side effects, `;
+                              underlined = "so I'm asking.";
+                            }
+                          }
+
+                          return (
+                            <span>
+                              &ldquo;{prefix}
+                              <span className="underline decoration-[#17494D] decoration-1.5 underline-offset-2 text-[#17494D] font-medium not-italic">
+                                {underlined}
+                              </span>
+                              &rdquo;
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </div>
                   )}
 
