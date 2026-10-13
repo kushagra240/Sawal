@@ -282,7 +282,7 @@ export function ForkPanel({
 
           {/* 2. Reading Threads: From Slip to Fork/Merge Point */}
           {interpretationThreads.map((thread) => {
-            const isDrawn = thread.index < drawnCount || !isAnimating;
+            const isDrawn = thread.index < drawnCount || drawnCount >= totalReadings;
             const belongsToActiveGroup = activeGroupId
               ? thread.group_id === activeGroupId
               : true;
