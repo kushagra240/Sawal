@@ -1,0 +1,41 @@
+{
+  "provider": "gemini",
+  "model": "gemma-4-26b-a4b-it",
+  "prompt_hash": "66f6cc4b15c90e26bfca330e2d62fb3efc10d6a5041cb0f4f184092ea87151e4",
+  "interpretations": [
+    {
+      "id": "interp-01",
+      "rationale": "The user wants to send an email to Priya. Priya Sharma is a contact in the system.",
+      "slots": {
+        "contact_id": "priya-sharma"
+      },
+      "plan": [
+        {
+          "tool": "email.send",
+          "args": {
+            "to": "priya.sharma@fincorp.internal",
+            "subject": "Lab slot confirmation",
+            "body": "Hi Priya, confirming the lab slot."
+          }
+        }
+      ]
+    },
+    {
+      "id": "interp-02",
+      "rationale": "The user wants to send an email to Priya. Priya Kulkarni is a contact in the system.",
+      "slots": {
+        "contact_id": "priya-kulkarni"
+      },
+      "plan": [
+        {
+          "tool": "email.send",
+          "args": {
+            "to": "priya.kulkarni@academics.internal",
+            "subject": "Lab slot confirmation",
+            "body": "Hi Priya, confirming the lab slot."
+          }
+        }
+      ]
+    }
+  ]
+}
