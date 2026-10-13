@@ -1,0 +1,248 @@
+{
+  "asked_session": {
+    "session_id": "sess-mock-asked-priya",
+    "request_text": "Send an email to Priya confirming the lab slot.",
+    "status": "asked",
+    "decision": {
+      "action": "ask",
+      "expected_regret": 0.82,
+      "threshold": 0.35,
+      "low_diversity": false
+    },
+    "interpretations": [
+      {
+        "id": "interp-1",
+        "rationale": "Email Dr. Priya Sharma (Lab Lead) regarding tomorrow's verified robotics workstation slot.",
+        "group_id": "grp-sharma",
+        "plan": [
+          { "tool": "contacts.search", "args": { "query": "Priya Sharma" } },
+          { "tool": "email.send", "args": { "to": "priya.sharma@lab.univ.edu", "subject": "Lab Slot Confirmation" } }
+        ],
+        "effects": [
+          {
+            "summary": "Send email to priya.sharma@lab.univ.edu confirming 3:00 PM slot",
+            "reversibility": "irreversible"
+          }
+        ]
+      },
+      {
+        "id": "interp-2",
+        "rationale": "Assume Dr. Sharma and append calendar invite attachment to lab slot confirmation.",
+        "group_id": "grp-sharma",
+        "plan": [
+          { "tool": "contacts.get", "args": { "id": "contact_priya_sharma" } },
+          { "tool": "email.send", "args": { "to": "priya.sharma@lab.univ.edu", "subject": "Slot Confirmation & Invite" } }
+        ],
+        "effects": [
+          {
+            "summary": "Send email to priya.sharma@lab.univ.edu confirming 3:00 PM slot",
+            "reversibility": "irreversible"
+          }
+        ]
+      },
+      {
+        "id": "interp-3",
+        "rationale": "Notify Dr. Priya Sharma with priority flag set for upcoming bench slot assignment.",
+        "group_id": "grp-sharma",
+        "plan": [
+          { "tool": "email.send", "args": { "to": "priya.sharma@lab.univ.edu", "subject": "Confirmed: Lab Slot" } }
+        ],
+        "effects": [
+          {
+            "summary": "Send email to priya.sharma@lab.univ.edu confirming 3:00 PM slot",
+            "reversibility": "irreversible"
+          }
+        ]
+      },
+      {
+        "id": "interp-4",
+        "rationale": "Email Priya Kulkarni (OS lab project partner) to confirm shared workstation time.",
+        "group_id": "grp-kulkarni",
+        "plan": [
+          { "tool": "contacts.search", "args": { "query": "Priya Kulkarni" } },
+          { "tool": "email.send", "args": { "to": "p.kulkarni@student.univ.edu", "subject": "Confirmed Lab Slot for OS Project" } }
+        ],
+        "effects": [
+          {
+            "summary": "Send email to p.kulkarni@student.univ.edu confirming 3:00 PM slot",
+            "reversibility": "irreversible"
+          }
+        ]
+      },
+      {
+        "id": "interp-5",
+        "rationale": "Send note to classmate Priya Kulkarni confirming bench availability in Lab 3.",
+        "group_id": "grp-kulkarni",
+        "plan": [
+          { "tool": "email.send", "args": { "to": "p.kulkarni@student.univ.edu", "subject": "Lab slot confirmed" } }
+        ],
+        "effects": [
+          {
+            "summary": "Send email to p.kulkarni@student.univ.edu confirming 3:00 PM slot",
+            "reversibility": "irreversible"
+          }
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "id": "grp-sharma",
+        "size": 3,
+        "effects": [
+          {
+            "summary": "Send email to priya.sharma@lab.univ.edu confirming 3:00 PM slot",
+            "reversibility": "irreversible"
+          }
+        ]
+      },
+      {
+        "id": "grp-kulkarni",
+        "size": 2,
+        "effects": [
+          {
+            "summary": "Send email to p.kulkarni@student.univ.edu confirming 3:00 PM slot",
+            "reversibility": "irreversible"
+          }
+        ]
+      }
+    ],
+    "question": {
+      "id": "q-priya-recipient",
+      "text": "Which Priya did you mean to email about the lab slot?",
+      "options": [
+        {
+          "id": "opt-sharma",
+          "label": "Priya Sharma (Lab Lead, AI Lab)"
+        },
+        {
+          "id": "opt-kulkarni",
+          "label": "Priya Kulkarni (Classmate, OS Partner)"
+        }
+      ]
+    },
+    "result": null,
+    "trace": [
+      { "step": 1, "message": "Synthesized 5 candidate interpretations from vague request" },
+      { "step": 2, "message": "Rehearsed candidate plans in sandbox environment" },
+      { "step": 3, "message": "Identified 2 disjoint outcome clusters with irreversible action (email.send)" },
+      { "step": 4, "message": "Calculated expected regret R(act)=0.82 exceeding threshold tau=0.35" },
+      { "step": 5, "message": "Formulated disambiguation question with 2 high-entropy options" }
+    ],
+    "error": null
+  },
+  "completed_session": {
+    "session_id": "sess-mock-completed-calendar",
+    "request_text": "Check my calendar for tomorrow afternoon.",
+    "status": "completed",
+    "decision": {
+      "action": "act",
+      "expected_regret": 0.02,
+      "threshold": 0.35,
+      "low_diversity": false
+    },
+    "interpretations": [
+      {
+        "id": "interp-cal-1",
+        "rationale": "Query user calendar for scheduled events between 12:00 PM and 5:00 PM tomorrow.",
+        "group_id": "grp-cal",
+        "plan": [
+          { "tool": "calendar.list_events", "args": { "start": "tomorrowT12:00", "end": "tomorrowT17:00" } }
+        ],
+        "effects": [
+          {
+            "summary": "Read calendar events between 12:00 PM and 5:00 PM tomorrow",
+            "reversibility": "readonly"
+          }
+        ]
+      },
+      {
+        "id": "interp-cal-2",
+        "rationale": "Query calendar extending afternoon window to 6:00 PM to capture late symposiums.",
+        "group_id": "grp-cal",
+        "plan": [
+          { "tool": "calendar.list_events", "args": { "start": "tomorrowT12:00", "end": "tomorrowT18:00" } }
+        ],
+        "effects": [
+          {
+            "summary": "Read calendar events between 12:00 PM and 6:00 PM tomorrow",
+            "reversibility": "readonly"
+          }
+        ]
+      },
+      {
+        "id": "interp-cal-3",
+        "rationale": "Query afternoon meetings with location coordinates included.",
+        "group_id": "grp-cal",
+        "plan": [
+          { "tool": "calendar.list_events", "args": { "start": "tomorrowT12:00", "end": "tomorrowT17:00", "expand": "locations" } }
+        ],
+        "effects": [
+          {
+            "summary": "Read calendar events between 12:00 PM and 5:00 PM tomorrow",
+            "reversibility": "readonly"
+          }
+        ]
+      },
+      {
+        "id": "interp-cal-4",
+        "rationale": "Check tomorrow's calendar agenda view specifically filtering afternoon entries.",
+        "group_id": "grp-cal",
+        "plan": [
+          { "tool": "calendar.get_agenda", "args": { "date": "tomorrow", "timeframe": "afternoon" } }
+        ],
+        "effects": [
+          {
+            "summary": "Read calendar agenda for tomorrow afternoon",
+            "reversibility": "readonly"
+          }
+        ]
+      },
+      {
+        "id": "interp-cal-5",
+        "rationale": "Read user schedule and free/busy slots across 1:00 PM - 5:00 PM tomorrow.",
+        "group_id": "grp-cal",
+        "plan": [
+          { "tool": "calendar.list_events", "args": { "start": "tomorrowT13:00", "end": "tomorrowT17:00" } }
+        ],
+        "effects": [
+          {
+            "summary": "Read calendar events between 1:00 PM and 5:00 PM tomorrow",
+            "reversibility": "readonly"
+          }
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "id": "grp-cal",
+        "size": 5,
+        "effects": [
+          {
+            "summary": "Read calendar events for tomorrow afternoon",
+            "reversibility": "readonly"
+          }
+        ]
+      }
+    ],
+    "question": null,
+    "result": {
+      "executed_tools": ["calendar.list_events"],
+      "world_diff": [
+        {
+          "entity": "calendar.cache",
+          "op": "read",
+          "summary": "Found 2 events: 2:00 PM ML Reading Group (Room 101), 4:00 PM Office Hours with Prof. Roy",
+          "reversibility": "readonly"
+        }
+      ]
+    },
+    "trace": [
+      { "step": 1, "message": "Synthesized 5 candidate interpretations from user prompt" },
+      { "step": 2, "message": "Rehearsed candidate plans in sandbox environment" },
+      { "step": 3, "message": "All 5 candidate plans collapsed to readonly calendar query" },
+      { "step": 4, "message": "Calculated expected regret R(act)=0.02 well below threshold tau=0.35" },
+      { "step": 5, "message": "Safe to proceed: executed calendar.list_events directly without interrupting user" }
+    ],
+    "error": null
+  }
+}

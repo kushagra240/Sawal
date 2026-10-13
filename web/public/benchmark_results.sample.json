@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "n_tasks": 100,
+    "model": "synthetic-sample-harness-v0.1 (SAMPLE DATA)",
+    "date": "2026-10-13"
+  },
+  "policies": [
+    {
+      "name": "always_act",
+      "questions_per_task": 0.0,
+      "wrong_action_rate": 0.42,
+      "unnecessary_question_rate": 0.0,
+      "irreversible_error_rate": 0.31
+    },
+    {
+      "name": "always_ask",
+      "questions_per_task": 1.0,
+      "wrong_action_rate": 0.04,
+      "unnecessary_question_rate": 0.78,
+      "irreversible_error_rate": 0.02
+    },
+    {
+      "name": "ask_if_model_unsure",
+      "questions_per_task": 0.62,
+      "wrong_action_rate": 0.22,
+      "unnecessary_question_rate": 0.45,
+      "irreversible_error_rate": 0.16
+    },
+    {
+      "name": "sawal",
+      "questions_per_task": 0.28,
+      "wrong_action_rate": 0.06,
+      "unnecessary_question_rate": 0.08,
+      "irreversible_error_rate": 0.03
+    }
+  ],
+  "sweep": [
+    { "tau": 0.05, "questions_per_task": 0.75, "wrong_action_rate": 0.03 },
+    { "tau": 0.15, "questions_per_task": 0.52, "wrong_action_rate": 0.04 },
+    { "tau": 0.25, "questions_per_task": 0.38, "wrong_action_rate": 0.05 },
+    { "tau": 0.35, "questions_per_task": 0.28, "wrong_action_rate": 0.06 },
+    { "tau": 0.50, "questions_per_task": 0.18, "wrong_action_rate": 0.11 },
+    { "tau": 0.70, "questions_per_task": 0.09, "wrong_action_rate": 0.23 },
+    { "tau": 0.90, "questions_per_task": 0.02, "wrong_action_rate": 0.38 }
+  ]
+}
