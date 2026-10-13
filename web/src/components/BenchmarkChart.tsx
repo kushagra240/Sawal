@@ -26,10 +26,10 @@ const POLICY_LABELS: Record<PolicyName, string> = {
 };
 
 const POLICY_COLORS: Record<PolicyName, string> = {
-  always_act: "#dc2626", // Red
-  always_ask: "#d97706", // Amber
-  ask_if_model_unsure: "#8b5cf6", // Purple
-  sawal: "#10b981", // Emerald / Green
+  always_act: "#A33A2B", // Red / Can't be undone
+  always_ask: "#8A5A0B", // Amber / Can be undone
+  ask_if_model_unsure: "#6B665E", // Muted Ink
+  sawal: "#17494D", // Accent Teal
 };
 
 export function BenchmarkChart({ data }: BenchmarkChartProps) {
@@ -51,20 +51,20 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
   return (
     <div className="space-y-6">
       {/* Chart container */}
-      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 sm:p-6 shadow-xs">
+      <div className="rounded-[12px] border border-[#E8E2D8] bg-white p-5 sm:p-6 shadow-sawal-sm">
         <div className="mb-4">
-          <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
+          <h3 className="text-base sm:text-lg font-serif font-bold text-[#1C1B19]">
             Pareto Frontier: Questions Asked vs. Wrong Action Rate
           </h3>
-          <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
-            Lower is better on both axes. Sawal traces the regret frontier as threshold τ is swept.
+          <p className="text-xs sm:text-sm text-[#6B665E] font-sans">
+            Lower is better on both axes. Sawal traces the regret frontier as threshold &tau; is swept.
           </p>
         </div>
 
         <div className="w-full h-80 sm:h-96">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart margin={{ top: 20, right: 30, left: 10, bottom: 25 }}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E2D8" opacity={0.6} />
               <XAxis
                 type="number"
                 dataKey="questions_per_task"
@@ -77,7 +77,7 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
                   position: "insideBottom",
                   offset: -15,
                   fontSize: 12,
-                  fill: "#6b7280",
+                  fill: "#6B665E",
                 }}
               />
               <YAxis
@@ -93,7 +93,7 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
                   position: "insideLeft",
                   offset: 0,
                   fontSize: 12,
-                  fill: "#6b7280",
+                  fill: "#6B665E",
                 }}
               />
               <Tooltip
@@ -101,26 +101,26 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
                   if (!active || !payload || !payload.length) return null;
                   const item = payload[0].payload;
                   return (
-                    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-3 shadow-lg text-xs space-y-1">
-                      <div className="font-bold text-neutral-900 dark:text-white">
+                    <div className="rounded-[8px] border border-[#E8E2D8] bg-white p-3 shadow-sawal-md text-xs space-y-1">
+                      <div className="font-bold text-[#1C1B19] font-serif">
                         {item.name || `Sawal Sweep (τ = ${item.tau ?? "N/A"})`}
                       </div>
-                      <div className="text-neutral-600 dark:text-neutral-400">
+                      <div className="text-[#6B665E]">
                         Questions / Task:{" "}
-                        <span className="font-mono font-semibold text-neutral-900 dark:text-white">
+                        <span className="font-mono font-semibold text-[#1C1B19]">
                           {(item.questions_per_task * 100).toFixed(1)}%
                         </span>
                       </div>
-                      <div className="text-neutral-600 dark:text-neutral-400">
+                      <div className="text-[#6B665E]">
                         Wrong Action Rate:{" "}
-                        <span className="font-mono font-semibold text-neutral-900 dark:text-white">
+                        <span className="font-mono font-semibold text-[#1C1B19]">
                           {(item.wrong_action_rate * 100).toFixed(1)}%
                         </span>
                       </div>
                       {item.irreversible_error_rate !== undefined && (
-                        <div className="text-neutral-600 dark:text-neutral-400">
+                        <div className="text-[#6B665E]">
                           Irreversible Error Rate:{" "}
-                          <span className="font-mono font-semibold text-rose-600 dark:text-rose-400">
+                          <span className="font-mono font-semibold text-[#A33A2B]">
                             {(item.irreversible_error_rate * 100).toFixed(1)}%
                           </span>
                         </div>
@@ -131,15 +131,15 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
               />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: 12 }} />
 
-              {/* Sawal Sweep Curve */}
+              {/* Sawal Sweep Curve in Accent Teal */}
               <Line
                 data={sweepCurve}
                 dataKey="wrong_action_rate"
                 type="monotone"
-                stroke="#10b981"
-                strokeWidth={3}
+                stroke="#17494D"
+                strokeWidth={2.5}
                 name="Sawal Tau Sweep (Pareto Curve)"
-                dot={{ r: 4, fill: "#10b981" }}
+                dot={{ r: 4, fill: "#17494D" }}
                 activeDot={{ r: 6 }}
               />
 
@@ -147,19 +147,19 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
               <Scatter
                 data={policyPoints}
                 name="Evaluated Policies"
-                fill="#6366f1"
+                fill="#17494D"
                 shape={(props: { cx?: number; cy?: number; payload?: unknown }) => {
                   const { cx, cy, payload } = props;
                   const pointData = payload as { policyKey?: PolicyName } | undefined;
                   const color =
-                    (pointData?.policyKey && POLICY_COLORS[pointData.policyKey]) || "#6366f1";
+                    (pointData?.policyKey && POLICY_COLORS[pointData.policyKey]) || "#17494D";
                   return (
                     <circle
                       cx={cx}
                       cy={cy}
                       r={7}
                       fill={color}
-                      stroke="#ffffff"
+                      stroke="#FFFFFF"
                       strokeWidth={2}
                     />
                   );
@@ -171,20 +171,20 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
       </div>
 
       {/* Metrics Table */}
-      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs">
-        <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-          <h4 className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white">
+      <div className="rounded-[12px] border border-[#E8E2D8] bg-white overflow-hidden shadow-sawal-sm">
+        <div className="px-5 py-4 border-b border-[#E8E2D8] flex flex-wrap items-center justify-between gap-2">
+          <h4 className="text-sm sm:text-base font-serif font-bold text-[#1C1B19]">
             Policy Evaluation Metrics Summary
           </h4>
-          <span className="text-xs text-neutral-500 font-medium">
+          <span className="text-xs font-mono text-[#6B665E]">
             Evaluated across {data.meta.n_tasks} tasks ({data.meta.model})
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-96">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 uppercase tracking-wider font-semibold text-[11px] bg-neutral-50 dark:bg-neutral-850">
+              <tr className="border-b border-[#E8E2D8] text-[#6B665E] uppercase tracking-wider font-mono font-semibold text-[11px] bg-[#FBF8F3]">
                 <th className="py-3 px-4">Policy</th>
                 <th className="py-3 px-4 text-right">Questions / Task</th>
                 <th className="py-3 px-4 text-right">Wrong Action Rate</th>
@@ -192,16 +192,14 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
                 <th className="py-3 px-4 text-right">Irreversible Error Rate</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            <tbody className="divide-y divide-[#E8E2D8]">
               {data.policies.map((p) => {
                 const isSawal = p.name === "sawal";
                 return (
                   <tr
                     key={p.name}
                     className={`transition-colors ${
-                      isSawal
-                        ? "bg-emerald-50/50 dark:bg-emerald-950/20 font-medium"
-                        : "hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30"
+                      isSawal ? "bg-[#E6EFEE]/50 font-medium" : "hover:bg-[#FBF8F3]"
                     }`}
                   >
                     <td className="py-3 px-4">
@@ -210,11 +208,11 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
                           className="w-2.5 h-2.5 rounded-full"
                           style={{ backgroundColor: POLICY_COLORS[p.name] }}
                         />
-                        <span className="font-semibold text-neutral-900 dark:text-white">
+                        <span className="font-semibold text-[#1C1B19]">
                           {POLICY_LABELS[p.name] || p.name}
                         </span>
                         {isSawal && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white uppercase">
+                          <span className="px-2 py-0.5 rounded-[4px] text-[10px] font-mono font-bold bg-[#17494D] text-white uppercase">
                             Target
                           </span>
                         )}
@@ -229,7 +227,7 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
                     <td className="py-3 px-4 text-right font-mono">
                       {(p.unnecessary_question_rate * 100).toFixed(1)}%
                     </td>
-                    <td className="py-3 px-4 text-right font-mono text-rose-600 dark:text-rose-400 font-bold">
+                    <td className="py-3 px-4 text-right font-mono text-[#A33A2B] font-bold">
                       {(p.irreversible_error_rate * 100).toFixed(1)}%
                     </td>
                   </tr>
