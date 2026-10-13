@@ -2,7 +2,7 @@
 
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AlertCircle, RotateCcw } from "lucide-react";
-import { Interpretation, OutcomeGroup, Reversibility, Session } from "@/lib/types";
+import { Reversibility, Session } from "@/lib/types";
 import { ReversibilityBadge } from "./ReversibilityBadge";
 
 interface ForkPanelProps {
@@ -25,8 +25,14 @@ export function ForkPanel({
   const [drawnCount, setDrawnCount] = useState(0);
   const componentId = useId();
 
-  const interpretations = session?.interpretations || [];
-  const groups = session?.groups || [];
+  const interpretations = useMemo(
+    () => session?.interpretations || [],
+    [session?.interpretations]
+  );
+  const groups = useMemo(
+    () => session?.groups || [],
+    [session?.groups]
+  );
   const totalReadings = interpretations.length;
   const isSingleGroup = groups.length === 1;
   const isCommitted = session?.status === "completed" && session?.result !== null;
