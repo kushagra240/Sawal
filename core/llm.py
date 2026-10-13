@@ -35,7 +35,7 @@ def classify_failure_reason(reason: str | None, has_credentials: bool) -> str:
     r = reason.lower()
     if "not set" in r or "missing" in r or not has_credentials:
         return "MISSING_CREDENTIALS"
-    if any(k in r for k in ["401", "403", "unauthorized", "forbidden", "api_key_invalid"]):
+    if any(k in r for k in ["401", "403", "unauthorized", "forbidden", "api_key_invalid", "api key not valid", "invalid api key"]):
         return "HTTP_AUTH_ERROR"
     if any(k in r for k in ["404", "not found", "not supported", "is not in sawal"]):
         return "MODEL_NOT_FOUND_OR_UNSUPPORTED"
