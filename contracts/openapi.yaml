@@ -1,0 +1,1094 @@
+openapi: 3.1.0
+info:
+  title: Sawal API Contract
+  version: 1.0.0
+  description: >
+    The single source of truth REST API specification for Sawal ("An assistant that only interrupts you when it matters").
+    Developed by Jugaad Labs for Hacktoberfest Hack Day Pune x Cloud Computing Club 2026.
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8000/v1
+    description: Local development FastAPI server
+  - url: https://api.sawal.internal/v1
+    description: Production container deployment (Google Cloud Run / DigitalOcean)
+
+security:
+  - BearerAuth: []
+  - GuestAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns service liveness, storage backend status, and current LLM execution mode.
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: Service is healthy and operational.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+                timestamp: '2026-10-13T10:00:00Z'
+                version: 1.0.0
+                storage_backend: memory
+                llm_mode: auto
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /config:
+    get:
+      summary: Public runtime configuration
+      description: Returns safe runtime policy defaults, tau threshold, model identifiers, and guest mode availability.
+      operationId: getConfig
+      security: []
+      responses:
+        '200':
+          description: Runtime configuration returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+              example:
+                environment: development
+                allow_guest_demo: true
+                decision_tau: 0.25
+                max_questions: 2
+                num_interpretations: 5
+                gemma_model_id: gemma-4-26b-a4b-it
+                llm_mode: auto
+                reversibility_weights:
+                  email.send: 1.0
+                  restaurants.book: 0.7
+                  calendar.create_event: 0.4
+                  expenses.log: 0.3
+                  email.draft: 0.1
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /me:
+    get:
+      summary: Get user profile and preferences
+      description: Fetches current authenticated user's profile and stored preference memory.
+      operationId: getMe
+      responses:
+        '200':
+          description: User profile found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /me/preferences:
+    put:
+      summary: Update user preferences
+      description: Updates preference memory JSONB object in user profile to tune prior weights in P1.
+      operationId: updatePreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferencesRequest'
+            example:
+              preferences:
+                preferred_dining_time: "19:30"
+                dietary_preference: "vegetarian"
+                primary_manager_name: "Priya Sharma"
+      responses:
+        '200':
+          description: Preferences updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sessions:
+    post:
+      summary: Create decision session
+      description: >
+        Receives vague request text, generates K interpretations using Gemma 4,
+        dry-runs them in mock world, computes expected regret R, and either executes
+        immediately or returns a clarification question.
+      operationId: createSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+            example:
+              request_text: "Email Priya that the quarterly planning sync is moved to Thursday 3 PM"
+      responses:
+        '201':
+          description: Session created. Status may be 'asked' (awaiting user clarification) or 'completed' (acted immediately).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeoutError'
+
+    get:
+      summary: List user sessions
+      description: Returns cursor-paginated list of past assistant sessions for the current user.
+      operationId: listSessions
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination (ISO timestamp or UUID)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Maximum number of sessions to return
+      responses:
+        '200':
+          description: List of sessions retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sessions/{id}:
+    get:
+      summary: Get session details
+      description: Returns full state, interpretations, decision regret, trace events, and execution diff.
+      operationId: getSessionById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the session
+      responses:
+        '200':
+          description: Session found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sessions/{id}/answer:
+    post:
+      summary: Answer clarification question
+      description: Submits user response to an active question. Maps choice back to slots or triggers Gemma re-interpretation.
+      operationId: answerQuestion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnswerQuestionRequest'
+            example:
+              question_id: "q-slot-contact_id-01"
+              option_id: "opt-priya-sharma"
+              free_text: null
+      responses:
+        '200':
+          description: Session transitioned. Status will be 'completed' if decision was made, or 'asked' if second question needed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeoutError'
+
+  /world:
+    get:
+      summary: Get user world state
+      description: Returns all mock entities in the user's active sandbox world.
+      operationId: getWorldState
+      responses:
+        '200':
+          description: Mock sandbox world state returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorldState'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /world/reset:
+    post:
+      summary: Reset user world state
+      description: Restores user sandbox world to default initial seed dataset.
+      operationId: resetWorldState
+      responses:
+        '200':
+          description: World state reset to seed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorldState'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /benchmark/summary:
+    get:
+      summary: Get latest cached benchmark summary
+      description: Returns summary metrics and questions-versus-errors data for the headline benchmark chart.
+      operationId: getBenchmarkSummary
+      security: []
+      responses:
+        '200':
+          description: Cached benchmark summary retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkSummary'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /benchmark/runs:
+    post:
+      summary: Trigger benchmark execution
+      description: Developer endpoint gated by BENCHMARK_FLAG_GATED. Runs 24 evaluation tasks against configured policies.
+      operationId: createBenchmarkRun
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBenchmarkRunRequest'
+            example:
+              tau_values: [0.0, 0.1, 0.25, 0.5, 0.75, 1.0]
+              models: ["gemma-4-26b-a4b-it"]
+              tasks_count: 24
+      responses:
+        '202':
+          description: Benchmark run initiated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkRun'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Endpoint forbidden when BENCHMARK_FLAG_GATED=false.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /benchmark/runs/{id}:
+    get:
+      summary: Get benchmark run status
+      description: Polls progress and final results of a specific benchmark run.
+      operationId: getBenchmarkRunById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Benchmark run UUID
+      responses:
+        '200':
+          description: Benchmark run status and results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkRun'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Clerk user session token passed in Authorization header.
+    GuestAuth:
+      type: apiKey
+      in: header
+      name: X-Guest-Session-ID
+      description: Ephemeral session identifier when ALLOW_GUEST_DEMO=true.
+
+  responses:
+    BadRequestError:
+      description: Bad request syntax or validation failure.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: BAD_REQUEST
+              message: "Invalid input provided"
+    UnauthorizedError:
+      description: Authentication required or invalid Clerk token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: UNAUTHORIZED
+              message: "Missing or invalid Clerk bearer token"
+    NotFoundError:
+      description: Requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: NOT_FOUND
+              message: "Session not found"
+    ConflictError:
+      description: Resource conflict or invalid state transition.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: CONFLICT
+              message: "Session is already completed or failed"
+    UnprocessableEntityError:
+      description: Input semantically invalid against schema.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: UNPROCESSABLE_ENTITY
+              message: "Tool plan arguments failed schema validation"
+    RateLimitError:
+      description: Rate limit exceeded.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: RATE_LIMIT_EXCEEDED
+              message: "Too many requests. Please retry after 60 seconds."
+    InternalServerError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: INTERNAL_SERVER_ERROR
+              message: "An unexpected error occurred."
+    BadGatewayError:
+      description: Upstream model API failure.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: UPSTREAM_LLM_FAILURE
+              message: "Gemma 4 upstream API returned 502/503"
+    GatewayTimeoutError:
+      description: Upstream model API timeout.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: UPSTREAM_LLM_TIMEOUT
+              message: "Gemma 4 API call timed out after 15 seconds"
+
+  schemas:
+    StandardError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: NOT_FOUND
+            message:
+              type: string
+              example: "Session not found"
+            details:
+              type: object
+              additionalProperties: true
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - version
+        - storage_backend
+        - llm_mode
+      properties:
+        status:
+          type: string
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+          example: 1.0.0
+        storage_backend:
+          type: string
+          enum: [memory, supabase]
+        llm_mode:
+          type: string
+          enum: [live, record, replay, auto]
+
+    ConfigResponse:
+      type: object
+      required:
+        - environment
+        - allow_guest_demo
+        - decision_tau
+        - max_questions
+        - num_interpretations
+        - gemma_model_id
+        - llm_mode
+        - reversibility_weights
+      properties:
+        environment:
+          type: string
+          example: development
+        allow_guest_demo:
+          type: boolean
+          example: true
+        decision_tau:
+          type: number
+          example: 0.25
+        max_questions:
+          type: integer
+          example: 2
+        num_interpretations:
+          type: integer
+          example: 5
+        gemma_model_id:
+          type: string
+          example: gemma-4-26b-a4b-it
+        llm_mode:
+          type: string
+          enum: [live, record, replay, auto]
+        reversibility_weights:
+          type: object
+          additionalProperties:
+            type: number
+
+    Profile:
+      type: object
+      required:
+        - user_id
+        - display_name
+        - preferences
+        - created_at
+      properties:
+        user_id:
+          type: string
+          example: user_2tQ...
+        display_name:
+          type: string
+          example: "Teammate User"
+        preferences:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+
+    UpdatePreferencesRequest:
+      type: object
+      required:
+        - preferences
+      properties:
+        preferences:
+          type: object
+          additionalProperties: true
+
+    CreateSessionRequest:
+      type: object
+      required:
+        - request_text
+      properties:
+        request_text:
+          type: string
+          minLength: 3
+          maxLength: 1000
+          example: "Reserve a table for 4 at Deccan Bistro around 8 PM"
+
+    AnswerQuestionRequest:
+      type: object
+      required:
+        - question_id
+      properties:
+        question_id:
+          type: string
+          example: "q-slot-contact_id-01"
+        option_id:
+          type: [string, "null"]
+          example: "opt-priya-sharma"
+        free_text:
+          type: [string, "null"]
+          example: "The one from office, Priya Sharma"
+
+    Session:
+      type: object
+      required:
+        - id
+        - user_id
+        - request_text
+        - status
+        - decision
+        - interpretations
+        - trace
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        request_text:
+          type: string
+        status:
+          type: string
+          enum: [asked, completed, failed]
+        decision:
+          $ref: '#/components/schemas/Decision'
+        interpretations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Interpretation'
+        question:
+          anyOf:
+            - $ref: '#/components/schemas/ClarificationQuestion'
+            - type: "null"
+        result:
+          anyOf:
+            - $ref: '#/components/schemas/ExecutionResult'
+            - type: "null"
+        trace:
+          type: array
+          items:
+            $ref: '#/components/schemas/TraceEvent'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Decision:
+      type: object
+      required:
+        - action
+        - expected_regret
+        - tau
+        - groups
+      properties:
+        action:
+          type: string
+          enum: [act, ask]
+        expected_regret:
+          type: number
+          example: 0.35
+        tau:
+          type: number
+          example: 0.25
+        chosen_group_id:
+          type: [string, "null"]
+          example: "grp-4a8b1c"
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutcomeGroup'
+
+    OutcomeGroup:
+      type: object
+      required:
+        - id
+        - mass
+        - interpretation_ids
+        - canonical_effects
+        - signature
+      properties:
+        id:
+          type: string
+          example: "grp-4a8b1c"
+        mass:
+          type: number
+          example: 0.6
+        interpretation_ids:
+          type: array
+          items:
+            type: string
+          example: ["interp-01", "interp-03", "interp-05"]
+        canonical_effects:
+          type: array
+          items:
+            $ref: '#/components/schemas/CanonicalEffect'
+        signature:
+          type: string
+          example: "sha256-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+    CanonicalEffect:
+      type: object
+      required:
+        - entity_type
+        - operation
+        - key_fields
+        - reversibility_weight
+      properties:
+        entity_type:
+          type: string
+          enum: [contact, calendar_event, restaurant, reservation, email, expense]
+        operation:
+          type: string
+          enum: [create, update, delete, send]
+        key_fields:
+          type: object
+          additionalProperties: true
+        reversibility_weight:
+          type: number
+          example: 1.0
+
+    Interpretation:
+      type: object
+      required:
+        - id
+        - rationale
+        - slots
+        - plan
+        - signature
+        - group_id
+      properties:
+        id:
+          type: string
+          example: "interp-01"
+        rationale:
+          type: string
+          example: "Assumes user intends Priya Sharma (Manager) for work email."
+        slots:
+          type: object
+          additionalProperties: true
+          example:
+            contact_id: "priya-sharma"
+            urgency: "high"
+        plan:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        signature:
+          type: string
+        group_id:
+          type: string
+
+    ToolCall:
+      type: object
+      required:
+        - tool
+        - args
+      properties:
+        tool:
+          type: string
+          enum:
+            - contacts.search
+            - calendar.list
+            - calendar.create_event
+            - restaurants.search
+            - restaurants.book
+            - email.draft
+            - email.send
+            - expenses.log
+        args:
+          type: object
+          additionalProperties: true
+
+    ClarificationQuestion:
+      type: object
+      required:
+        - id
+        - slot_name
+        - question
+        - options
+      properties:
+        id:
+          type: string
+          example: "q-slot-contact_id-01"
+        slot_name:
+          type: string
+          example: "contact_id"
+        question:
+          type: string
+          example: "Which Priya would you like to email about the quarterly planning sync?"
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionOption'
+
+    QuestionOption:
+      type: object
+      required:
+        - id
+        - label
+        - value
+        - target_group_ids
+      properties:
+        id:
+          type: string
+          example: "opt-priya-sharma"
+        label:
+          type: string
+          example: "Priya Sharma (Manager at FinCorp)"
+        value:
+          type: string
+          example: "priya-sharma"
+        target_group_ids:
+          type: array
+          items:
+            type: string
+          example: ["grp-4a8b1c"]
+
+    ExecutionResult:
+      type: object
+      required:
+        - success
+        - executed_plan
+        - world_diff
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        executed_plan:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        world_diff:
+          $ref: '#/components/schemas/WorldDiff'
+        message:
+          type: string
+          example: "Successfully drafted email and booked reservation."
+
+    WorldDiff:
+      type: object
+      required:
+        - added
+        - modified
+        - deleted
+      properties:
+        added:
+          type: object
+          additionalProperties: true
+        modified:
+          type: object
+          additionalProperties: true
+        deleted:
+          type: object
+          additionalProperties: true
+
+    TraceEvent:
+      type: object
+      required:
+        - id
+        - kind
+        - payload
+        - timestamp
+      properties:
+        id:
+          type: string
+          example: "trc-01"
+        kind:
+          type: string
+          example: "INTERPRETATION_GENERATED"
+        payload:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+    SessionListResponse:
+      type: object
+      required:
+        - items
+        - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+
+    WorldState:
+      type: object
+      required:
+        - contacts
+        - calendar_events
+        - restaurants
+        - reservations
+        - emails
+        - expenses
+      properties:
+        contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactEntity'
+        calendar_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalendarEventEntity'
+        restaurants:
+          type: array
+          items:
+            $ref: '#/components/schemas/RestaurantEntity'
+        reservations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationEntity'
+        emails:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailEntity'
+        expenses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenseEntity'
+
+    ContactEntity:
+      type: object
+      required: [id, name, email, phone, relationship]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        relationship: { type: string }
+        company: { type: string }
+
+    CalendarEventEntity:
+      type: object
+      required: [id, title, start_time, end_time, attendees]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        start_time: { type: string, format: date-time }
+        end_time: { type: string, format: date-time }
+        attendees: { type: array, items: { type: string } }
+
+    RestaurantEntity:
+      type: object
+      required: [id, name, cuisine, dietary_tags, price_band, capacity]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        cuisine: { type: string }
+        dietary_tags: { type: array, items: { type: string } }
+        price_band: { type: string, enum: ["₹", "₹₹", "₹₹₹"] }
+        capacity: { type: integer }
+
+    ReservationEntity:
+      type: object
+      required: [id, restaurant_id, time, party_size, guest_name, status]
+      properties:
+        id: { type: string }
+        restaurant_id: { type: string }
+        time: { type: string, format: date-time }
+        party_size: { type: integer }
+        guest_name: { type: string }
+        status: { type: string, enum: [confirmed, cancelled] }
+
+    EmailEntity:
+      type: object
+      required: [id, to, subject, body, status, created_at]
+      properties:
+        id: { type: string }
+        to: { type: string, format: email }
+        subject: { type: string }
+        body: { type: string }
+        status: { type: string, enum: [draft, sent] }
+        created_at: { type: string, format: date-time }
+
+    ExpenseEntity:
+      type: object
+      required: [id, category, amount, currency, description, timestamp]
+      properties:
+        id: { type: string }
+        category: { type: string }
+        amount: { type: number }
+        currency: { type: string, example: "INR" }
+        description: { type: string }
+        timestamp: { type: string, format: date-time }
+
+    BenchmarkSummary:
+      type: object
+      required:
+        - latest_run_id
+        - timestamp
+        - tasks_count
+        - metrics
+        - baselines
+        - tau_sweep
+      properties:
+        latest_run_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        tasks_count:
+          type: integer
+          example: 24
+        metrics:
+          type: object
+          required:
+            - wrong_action_rate
+            - questions_per_task
+            - unnecessary_question_rate
+            - missed_ask_rate
+            - irreversible_error_rate
+          properties:
+            wrong_action_rate: { type: number }
+            questions_per_task: { type: number }
+            unnecessary_question_rate: { type: number }
+            missed_ask_rate: { type: number }
+            irreversible_error_rate: { type: number }
+        baselines:
+          type: object
+          additionalProperties: true
+        tau_sweep:
+          type: array
+          items:
+            type: object
+            properties:
+              tau: { type: number }
+              questions_per_task: { type: number }
+              wrong_action_rate: { type: number }
+              irreversible_error_rate: { type: number }
+
+    CreateBenchmarkRunRequest:
+      type: object
+      properties:
+        tau_values:
+          type: array
+          items: { type: number }
+        models:
+          type: array
+          items: { type: string }
+        tasks_count:
+          type: integer
+
+    BenchmarkRun:
+      type: object
+      required:
+        - id
+        - status
+        - config
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [running, completed, failed]
+        config:
+          type: object
+        summary:
+          anyOf:
+            - $ref: '#/components/schemas/BenchmarkSummary'
+            - type: "null"
+        created_at:
+          type: string
+          format: date-time
