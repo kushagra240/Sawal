@@ -1,0 +1,117 @@
+graph TB
+  subgraph Frontend ["Frontend (Next.js / React / TypeScript)"]
+    UI["Web UI (Port 3000)"]
+    ChatComp["Chat Column & Composer"]
+    ConfComp["Action Confirmation Panel"]
+    ConnComp["Connected Accounts Panel"]
+    BenchComp["Benchmark Explorer & Sweep"]
+  end
+
+  subgraph API ["API Layer (FastAPI - Port 8000)"]
+    Router["FastAPI Router (/v1 & /)"]
+    SessionEp["POST /v1/sessions & /sessions/{id}/answer"]
+    ConfirmEp["POST /v1/sessions/{id}/confirm & /cancel"]
+    OAuthEp["GET /v1/oauth/google/connect & callback"]
+    ConnEp["GET /v1/connections & /providers/capabilities"]
+    BenchEp["GET /v1/benchmark/summary & runs"]
+  end
+
+  subgraph CoreDecisionEngine ["Ask-or-Act Decision Engine (Deterministic)"]
+    Engine["core.engine: create_session & answer_session"]
+    Ambiguity["Candidate Interpretation Analysis"]
+    DecisionLogic{"Expected Regret <= Tau (0.25)?"}
+    QuestionBuilder["Clarification Question & Options Builder"]
+  end
+
+  subgraph LLMLayer ["LLM Interpretation Layer"]
+    LLMClient["core.llm: propose_with_meta"]
+    Validation["Tool Call Schema & Parameter Validation"]
+    HostedGemma["Hosted Gemma (Gemini API / Generative Language)"]
+    CacheReplay["Offline Replay Cache (benchmark/replay_cache)"]
+    DeterministicFallback["Deterministic Mock Fallback Engine"]
+  end
+
+  subgraph MockExecution ["Mock / Sandbox Execution Layer"]
+    SimWorld["In-Memory Seed World (Contacts, Emails, Calendar, Restaurants)"]
+    CloneWorld["Isolated Cloned Sandbox Worlds"]
+    MockTools["core.tools: Allowlisted Mock Tools (8 Simulated Handlers)"]
+  end
+
+  subgraph LiveService ["Live Execution Coordinator"]
+    LiveExec["core.live: LiveExecutionService"]
+    PlanPreview["Exact-Plan Preview Generator"]
+    IdempotencyEngine["SHA-256 Idempotency Key Engine"]
+    StateTracker["Action State Machine (ready | awaiting_confirmation | executing | completed | cancelled | failed)"]
+  end
+
+  subgraph AuthAndStorage ["Security, OAuth & Durable Storage"]
+    OAuthMgr["core.oauth: GoogleOAuthManager (PKCE S256 + Expiring State)"]
+    Store["core.storage: AgentStore (SQLite .data/sawal.db)"]
+    Cipher["core.storage: CredentialCipher (Fernet / AES-128-CBC)"]
+    AuditLog["Durable Audit Trail (audit_events table)"]
+    ExpenseLedger["Persistent Expense Ledger (expenses table)"]
+  end
+
+  subgraph ExternalProviders ["External Integrations"]
+    GoogleProv["core.providers.google: GoogleProvider"]
+    Gmail["Google Gmail API (messages, drafts, compose)"]
+    Calendar["Google Calendar API (events, freeBusy)"]
+    People["Google People API (contacts search)"]
+    RestUnavail["Restaurant Reservations (Explicitly Unavailable)"]
+  end
+
+  subgraph Tooling ["Verification & Benchmarking Tooling"]
+    Pytest["Automated Test Suite (39 Pytest Unit & Integration Tests)"]
+    Probe["benchmark/probe_hosted.py (Hosted Gemma Live Probe)"]
+    BenchmarkRunner["benchmark/runner.py (Sweep & Policy Evaluation)"]
+  end
+
+  %% Flow lines
+  UI --> Router
+  Router --> SessionEp
+  Router --> ConfirmEp
+  Router --> OAuthEp
+  Router --> ConnEp
+  Router --> BenchEp
+
+  SessionEp --> Engine
+  Engine --> LLMClient
+  LLMClient -.->|"Live Mode"| HostedGemma
+  LLMClient -.->|"Replay Mode"| CacheReplay
+  LLMClient -.->|"Missing Key / Fallback"| DeterministicFallback
+  HostedGemma --> Validation
+  CacheReplay --> Validation
+  DeterministicFallback --> Validation
+  Validation --> Ambiguity
+
+  Ambiguity --> CloneWorld
+  CloneWorld --> MockTools
+  MockTools --> DecisionLogic
+
+  DecisionLogic -->|"No (Regret > Tau)"| QuestionBuilder
+  QuestionBuilder -->|"Status: asked"| UI
+  DecisionLogic -->|"Yes (Regret <= Tau) & Mock Mode"| SimWorld
+  DecisionLogic -->|"Yes (Regret <= Tau) & Live Mode"| LiveExec
+
+  LiveExec --> PlanPreview
+  PlanPreview --> IdempotencyEngine
+  IdempotencyEngine --> StateTracker
+  StateTracker --> Store
+
+  ConfirmEp --> LiveExec
+  LiveExec -->|"Consequential Action Confirmed"| GoogleProv
+  LiveExec -->|"Expense Action"| ExpenseLedger
+  LiveExec -->|"Restaurant Request"| RestUnavail
+
+  OAuthEp --> OAuthMgr
+  OAuthMgr --> Cipher
+  Cipher --> Store
+
+  GoogleProv --> Gmail
+  GoogleProv --> Calendar
+  GoogleProv --> People
+
+  LiveExec --> AuditLog
+  OAuthMgr --> AuditLog
+
+  BenchEp --> BenchmarkRunner
