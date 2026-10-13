@@ -13,12 +13,13 @@ from . import llm
 from .tools import TOOL_NAMES, TOOL_WEIGHTS, run_tool, validate_call
 from .world import clone_world
 
-TAU = float(os.getenv("SAWAL_DECISION_TAU", "0.25"))
-MAX_QUESTIONS = int(os.getenv("SAWAL_MAX_QUESTIONS", "2"))
-K = 5
+TAU = float(os.getenv("SAWAL_DECISION_TAU", os.getenv("DECISION_TAU", "0.25")))
+MAX_QUESTIONS = int(os.getenv("SAWAL_MAX_QUESTIONS", os.getenv("MAX_QUESTIONS", "2")))
+K = int(os.getenv("NUM_INTERPRETATIONS", "5"))
 
 
-def create_session(request_text: str, world: dict) -> dict:
+def create_session(request_text: str, world: dict, tau: float | None = None) -> dict:
+    decision_tau = TAU if tau is None else float(tau)
     trace = []
     proposed = _propose(request_text, world)
     interpretations = _validate_interpretations(proposed)
@@ -39,14 +40,27 @@ def create_session(request_text: str, world: dict) -> dict:
     groups = _group(rehearsals)
     chosen, regret = _best_group(groups)
     trace.append(_trace("DRY_RUN_COMPLETED", {"valid_count": len(interpretations), "groups": len(groups)}))
-    trace.append(_trace("REGRET_CALCULATED", {"expected_regret": round(regret, 4), "tau": TAU}))
+    trace.append(_trace("REGRET_CALCULATED", {"expected_regret": round(regret, 4), "tau": decision_tau}))
 
     session = {
-        "id": str(uuid4()), "user_id": "guest", "request_text": request_text,
-        "status": "asked" if not low_diversity and regret > TAU else "completed",
-        "decision": {"action": "ask" if not low_diversity and regret > TAU else "act", "expected_regret": round(regret, 4), "tau": TAU, "chosen_group_id": chosen["id"] if chosen else None, "groups": groups},
-        "interpretations": interpretations, "question": None, "result": None, "trace": trace,
-        "created_at": _now(), "updated_at": _now(), "_candidate_question": None,
+        "id": str(uuid4()),
+        "user_id": "guest",
+        "request_text": request_text,
+        "status": "asked" if not low_diversity and regret > decision_tau else "completed",
+        "decision": {
+            "action": "ask" if not low_diversity and regret > decision_tau else "act",
+            "expected_regret": round(regret, 4),
+            "tau": decision_tau,
+            "chosen_group_id": chosen["id"] if chosen else None,
+            "groups": groups,
+        },
+        "interpretations": interpretations,
+        "question": None,
+        "result": None,
+        "trace": trace,
+        "created_at": _now(),
+        "updated_at": _now(),
+        "_candidate_question": None,
     }
     if low_diversity:
         session["trace"].append(_trace("LOW_DIVERSITY_FALLBACK", {"message": "Fewer than two valid plans; using the highest-ranked valid plan."}))
@@ -89,7 +103,13 @@ def answer_session(session: dict, world: dict, question_id: str, option_id: str 
     session["question"] = None
     session["decision"]["action"] = "act"
     session["decision"]["chosen_group_id"] = selected["group_id"]
-    session["result"] = {"success": True, "executed_plan": selected["plan"], "tool_results": tool_results, "world_diff": world_diff(before, world), "message": "Clarification received; selected plan executed in the mock world."}
+    session["result"] = {
+        "success": True,
+        "executed_plan": selected["plan"],
+        "tool_results": tool_results,
+        "world_diff": world_diff(before, world),
+        "message": "Clarification received; selected plan executed in the mock world.",
+    }
     session["trace"].append(_trace("ANSWER_MAPPED", {"slot": question["slot_name"], "value": option["value"]}))
     session["trace"].append(_trace("LIVE_EXECUTION_COMPLETED", {"success": True}))
     session["updated_at"] = _now()
@@ -105,7 +125,13 @@ def execute_group(world: dict, rehearsals: list[dict], group: dict | None) -> di
     for call in chosen["plan"] if chosen else []:
         result, _ = run_tool(world, call)
         results.append({"tool": call["tool"], "result": result})
-    return {"success": True, "executed_plan": chosen["plan"] if chosen else [], "tool_results": results, "world_diff": world_diff(before, world), "message": "Selected plan executed in the mock world."}
+    return {
+        "success": True,
+        "executed_plan": chosen["plan"] if chosen else [],
+        "tool_results": results,
+        "world_diff": world_diff(before, world),
+        "message": "Selected plan executed in the mock world.",
+    }
 
 
 def world_diff(before: dict, after: dict) -> dict:
@@ -125,7 +151,7 @@ def world_diff(before: dict, after: dict) -> dict:
 
 
 def _propose(request_text: str, world: dict) -> list[dict]:
-    mode = os.getenv("SAWAL_LLM_MODE", "mock").lower()
+    mode = os.getenv("SAWAL_LLM_MODE", os.getenv("LLM_MODE", "mock")).lower()
     if mode in {"live", "auto"}:
         live = llm.propose(request_text, world, K)
         if live:
@@ -216,7 +242,6 @@ def _group(rehearsals: list[dict]) -> list[dict]:
 
 def _best_group(groups: list[dict]) -> tuple[dict | None, float]:
     if not groups: return None, 1.0
-    # Select the action with minimum expected weighted effect distance.
     scored = [(sum(other["mass"] * _effect_distance(group["canonical_effects"], other["canonical_effects"]) for other in groups), group) for group in groups]
     regret, group = min(scored, key=lambda pair: (pair[0], -pair[1]["mass"]))
     return group, min(1.0, regret)

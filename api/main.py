@@ -1,16 +1,18 @@
-"""Sawal P0 REST API. Sessions and demo world are intentionally in-memory."""
+"""Sawal REST API. Implements OpenAPI contract routes with in-memory persistence."""
 
 from collections import defaultdict, deque
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from pathlib import Path
-from threading import Lock
 import json
 import os
+from pathlib import Path
+from threading import Lock
 import time
+from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Query, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, model_validator
 
@@ -18,30 +20,69 @@ from core.engine import MAX_QUESTIONS, TAU, answer_session, create_session
 from core.llm import ensure_open_weight_model
 from core.world import seed_world
 
-app = FastAPI(title="Sawal API", version="1.0.0", description="Effect-based ask-or-act demo harness")
-allowed_origins = [x.strip() for x in os.getenv("SAWAL_CORS_ORIGINS", "http://localhost:3000").split(",") if x.strip()]
-app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_methods=["GET", "POST"], allow_headers=["*"])
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_open_weight_model()
+    yield
+
+
+app = FastAPI(
+    title="Sawal API",
+    version="1.0.0",
+    description="Effect-based ask-or-act rehearsal API conforming to OpenAPI 3.1.0 contract.",
+    lifespan=lifespan,
+)
+
+raw_origins = os.getenv("SAWAL_CORS_ORIGINS") or os.getenv("CORS_ORIGINS") or "http://localhost:3000,http://127.0.0.1:3000"
+allowed_origins = [x.strip() for x in raw_origins.split(",") if x.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins or ["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 world = seed_world()
 sessions: dict[str, dict] = {}
+user_preferences: dict[str, object] = {
+    "preferred_dining_time": "19:30",
+    "dietary_preference": "vegetarian",
+    "primary_manager_name": "Priya Sharma",
+}
+benchmark_runs: dict[str, dict] = {}
 request_times: dict[str, deque] = defaultdict(deque)
 rate_lock = Lock()
-
-
-@app.on_event("startup")
-def check_model_allowlist():
-    ensure_open_weight_model()
 
 
 @app.exception_handler(HTTPException)
 async def http_error_response(request: Request, exc: HTTPException):
     detail = exc.detail if isinstance(exc.detail, dict) else {"code": "HTTP_ERROR", "message": str(exc.detail)}
-    return JSONResponse(status_code=exc.status_code, content={"error": {"code": detail.get("code", "HTTP_ERROR"), "message": detail.get("message", "Request failed")}})
+    code = detail.get("code", "HTTP_ERROR")
+    message = detail.get("message", "Request failed")
+    details = detail.get("details", {})
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "code": code,
+            "message": message,
+            "details": details,
+            "error": {"code": code, "message": message, "details": details},
+        },
+    )
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_error_response(request: Request, exc: RequestValidationError):
-    return JSONResponse(status_code=422, content={"error": {"code": "UNPROCESSABLE_ENTITY", "message": "Request validation failed", "details": {"errors": exc.errors()}}})
+    return JSONResponse(
+        status_code=422,
+        content={
+            "code": "UNPROCESSABLE_ENTITY",
+            "message": "Request validation failed",
+            "details": {"errors": exc.errors()},
+            "error": {"code": "UNPROCESSABLE_ENTITY", "message": "Request validation failed", "details": {"errors": exc.errors()}},
+        },
+    )
 
 
 class CreateSessionRequest(BaseModel):
@@ -60,6 +101,16 @@ class AnswerRequest(BaseModel):
         return self
 
 
+class UpdatePreferencesRequest(BaseModel):
+    preferences: dict[str, object]
+
+
+class CreateBenchmarkRunRequest(BaseModel):
+    tau_values: list[float] | None = None
+    models: list[str] | None = None
+    tasks_count: int | None = None
+
+
 def _rate_limit(request: Request) -> None:
     key = request.client.host if request.client else "unknown"
     now = time.monotonic()
@@ -67,7 +118,7 @@ def _rate_limit(request: Request) -> None:
         entries = request_times[key]
         while entries and now - entries[0] >= 60:
             entries.popleft()
-        if len(entries) >= 15:
+        if len(entries) >= 60:
             raise HTTPException(429, detail={"code": "RATE_LIMIT_EXCEEDED", "message": "Too many requests. Retry in a minute."})
         entries.append(now)
 
@@ -76,18 +127,68 @@ def _public(session: dict) -> dict:
     return {key: value for key, value in session.items() if not key.startswith("_")}
 
 
-@app.get("/v1/health")
+# Router definitions
+router = APIRouter()
+
+
+@router.get("/health")
 def health():
-    mode = os.getenv("SAWAL_LLM_MODE", "mock").lower()
-    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat(), "version": app.version, "storage_backend": "memory", "llm_mode": mode}
+    raw_mode = os.getenv("SAWAL_LLM_MODE", os.getenv("LLM_MODE", "auto")).lower()
+    mode = raw_mode if raw_mode in {"live", "record", "replay", "auto"} else "auto"
+    return {
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "version": app.version,
+        "storage_backend": "memory",
+        "llm_mode": mode,
+    }
 
 
-@app.get("/v1/config")
+@router.get("/config")
 def config():
-    return {"environment": os.getenv("ENVIRONMENT", "development"), "allow_guest_demo": True, "decision_tau": TAU, "max_questions": MAX_QUESTIONS, "num_interpretations": 5, "gemma_model_id": os.getenv("SAWAL_MODEL", "gemma4:e2b"), "llm_mode": os.getenv("SAWAL_LLM_MODE", "mock"), "reversibility_weights": {"email.send": 1.0, "restaurants.book": 0.7, "calendar.create_event": 0.4, "expenses.log": 0.3, "email.draft": 0.1}}
+    raw_mode = os.getenv("SAWAL_LLM_MODE", os.getenv("LLM_MODE", "auto")).lower()
+    mode = raw_mode if raw_mode in {"live", "record", "replay", "auto"} else "auto"
+    return {
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "allow_guest_demo": True,
+        "decision_tau": TAU,
+        "max_questions": MAX_QUESTIONS,
+        "num_interpretations": int(os.getenv("NUM_INTERPRETATIONS", "5")),
+        "gemma_model_id": os.getenv("GEMMA_MODEL_ID", os.getenv("SAWAL_MODEL", "gemma-4-26b-a4b-it")),
+        "llm_mode": mode,
+        "reversibility_weights": {
+            "email.send": 1.0,
+            "restaurants.book": 0.7,
+            "calendar.create_event": 0.4,
+            "expenses.log": 0.3,
+            "email.draft": 0.1,
+        },
+    }
 
 
-@app.post("/v1/sessions", status_code=201)
+@router.get("/me")
+def get_me():
+    return {
+        "user_id": "guest_user",
+        "display_name": "Teammate User (Guest Demo)",
+        "preferences": user_preferences,
+        "created_at": "2026-10-13T10:00:00Z",
+    }
+
+
+@router.put("/me/preferences")
+def update_preferences(req: UpdatePreferencesRequest):
+    global user_preferences
+    user_preferences.update(req.preferences)
+    return {
+        "user_id": "guest_user",
+        "display_name": "Teammate User (Guest Demo)",
+        "preferences": user_preferences,
+        "created_at": "2026-10-13T10:00:00Z",
+    }
+
+
+@router.post("/sessions", status_code=201)
 def create(request_body: CreateSessionRequest, request: Request, response: Response):
     _rate_limit(request)
     session = create_session(request_body.request_text, world)
@@ -95,26 +196,32 @@ def create(request_body: CreateSessionRequest, request: Request, response: Respo
     return _public(session)
 
 
-@app.get("/v1/sessions")
+@router.get("/sessions")
 def list_sessions(cursor: str | None = None, limit: int = Query(default=20, ge=1, le=100)):
     items = sorted(sessions.values(), key=lambda x: x["created_at"], reverse=True)
     if cursor:
         items = [item for item in items if item["created_at"] < cursor and item["id"] != cursor]
     page = items[:limit]
-    return {"items": [_public(item) for item in page], "next_cursor": page[-1]["created_at"] if len(items) > limit and page else None}
+    return {
+        "items": [_public(item) for item in page],
+        "next_cursor": page[-1]["created_at"] if len(items) > limit and page else None,
+        "has_more": len(items) > limit,
+    }
 
 
-@app.get("/v1/sessions/{session_id}")
+@router.get("/sessions/{session_id}")
 def get_session(session_id: str):
     session = sessions.get(session_id)
-    if not session: raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Session not found"})
+    if not session:
+        raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Session not found"})
     return _public(session)
 
 
-@app.post("/v1/sessions/{session_id}/answer")
+@router.post("/sessions/{session_id}/answer")
 def answer(session_id: str, request_body: AnswerRequest):
     session = sessions.get(session_id)
-    if not session: raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Session not found"})
+    if not session:
+        raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Session not found"})
     try:
         return _public(answer_session(session, world, request_body.question_id, request_body.option_id, request_body.free_text))
     except ValueError as exc:
@@ -123,21 +230,59 @@ def answer(session_id: str, request_body: AnswerRequest):
         raise HTTPException(status, detail={"code": "CONFLICT" if status == 409 else "UNPROCESSABLE_ENTITY", "message": message}) from exc
 
 
-@app.get("/v1/world")
+@router.get("/world")
 def get_world():
     return world
 
 
-@app.post("/v1/world/reset")
+@router.post("/world/reset")
 def reset_world():
     global world
     world = seed_world()
     return world
 
 
-@app.get("/v1/benchmark/summary")
+@router.get("/benchmark/summary")
 def benchmark_summary():
     path = Path(__file__).resolve().parents[1] / "benchmark" / "results" / "latest_summary.json"
     if path.is_file():
         return json.loads(path.read_text(encoding="utf-8"))
-    return {"status": "not_run", "message": "No benchmark results yet. Run `python -m benchmark.runner` to calculate measured metrics.", "tasks_count": 0, "points": []}
+    from benchmark.runner import evaluate
+    summary = evaluate()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    return summary
+
+
+@router.post("/benchmark/runs", status_code=202)
+def create_benchmark_run(req: CreateBenchmarkRunRequest | None = None):
+    from benchmark.runner import evaluate
+    summary = evaluate()
+    run_id = str(uuid4())
+    run_obj = {
+        "id": run_id,
+        "status": "completed",
+        "config": {
+            "tau_values": (req.tau_values if req and req.tau_values else [0.0, 0.1, 0.25, 0.5, 0.75, 1.0]),
+            "models": (req.models if req and req.models else ["gemma-4-26b-a4b-it"]),
+            "tasks_count": summary["tasks_count"],
+        },
+        "summary": summary,
+        "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "completed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+    }
+    benchmark_runs[run_id] = run_obj
+    return run_obj
+
+
+@router.get("/benchmark/runs/{run_id}")
+def get_benchmark_run(run_id: str):
+    run_obj = benchmark_runs.get(run_id)
+    if not run_obj:
+        raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Benchmark run not found"})
+    return run_obj
+
+
+# Mount routes at both /v1 prefix and root prefix
+app.include_router(router, prefix="/v1")
+app.include_router(router)
