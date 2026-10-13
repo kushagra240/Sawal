@@ -155,11 +155,94 @@ def _propose(request_text: str, world: dict) -> list[dict]:
     if mode in {"live", "auto"}:
         live = llm.propose(request_text, world, K)
         if live:
+            live = _enforce_contact_ambiguity(request_text, world, live)
             return live[:K]
         if mode == "live":
             # Safe local fallback keeps the demo usable if Gemma/Ollama is unavailable.
             pass
     return _heuristic_proposals(request_text, world)
+
+
+def _enforce_contact_ambiguity(request_text: str, world: dict, items: list[dict]) -> list[dict]:
+    """
+    Ground ambiguous person names against the mock-world contacts.
+
+    Example:
+        "Send an email to Priya..."
+    where the world contains multiple Priyas must produce candidate
+    plans for each matching contact instead of trusting arbitrary
+    model slot names.
+    """
+    lower = request_text.casefold()
+
+    matching_contacts = []
+    for contact in world.get("contacts", []):
+        first_name = str(contact.get("name", "")).split()[0].casefold()
+        if first_name and re.search(rf"\b{re.escape(first_name)}\b", lower):
+            matching_contacts.append(contact)
+
+    if len(matching_contacts) < 2:
+        return items
+
+    # Only intervene when the task actually contains an email action.
+    base = None
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        plan = item.get("plan", [])
+        if any(
+            isinstance(call, dict)
+            and call.get("tool") in {"email.send", "email.draft"}
+            for call in plan
+        ):
+            base = item
+            break
+
+    if base is None:
+        return items
+
+    grounded = []
+
+    # 3:2 distribution for two contacts keeps K=5 while preserving uncertainty.
+    distribution = []
+    for index in range(K):
+        distribution.append(matching_contacts[index % len(matching_contacts)])
+
+    if len(matching_contacts) == 2 and K == 5:
+        distribution = [
+            matching_contacts[0],
+            matching_contacts[0],
+            matching_contacts[0],
+            matching_contacts[1],
+            matching_contacts[1],
+        ]
+
+    for index, contact in enumerate(distribution):
+        candidate = deepcopy(base)
+        candidate["id"] = f"interp-{index + 1:02d}"
+
+        # Remove unreliable model-created ambiguity slots.
+        original_slots = candidate.get("slots", {})
+        allowed = {"restaurant_id", "date_time", "party_size", "subject", "body"}
+        clean_slots = {
+            key: value
+            for key, value in original_slots.items()
+            if key in allowed
+        }
+        clean_slots["contact_id"] = contact["id"]
+        candidate["slots"] = clean_slots
+
+        for call in candidate.get("plan", []):
+            if call.get("tool") in {"email.send", "email.draft"}:
+                call.setdefault("args", {})["to"] = contact["email"]
+
+        candidate["rationale"] = (
+            f"Interprets the ambiguous recipient as {contact['name']}."
+        )
+
+        grounded.append(candidate)
+
+    return grounded
 
 
 def _heuristic_proposals(text: str, world: dict) -> list[dict]:
@@ -272,11 +355,62 @@ def _make_question(rehearsals: list[dict], groups: list[dict]) -> dict | None:
     values: dict[str, dict[str, list[str]]] = defaultdict(lambda: defaultdict(list))
     group_for_interp = {r["interpretation"]["id"]: r["interpretation"]["group_id"] for r in rehearsals}
     for run in rehearsals:
-        for key, val in run["interpretation"]["slots"].items():
-            if val is not None: values[key][str(val)].append(run["interpretation"]["id"])
-    differing = [(slot, options) for slot, options in values.items() if len(options) > 1]
+        interpretation = run["interpretation"]
+
+        allowed_question_slots = {
+            "contact_id",
+            "restaurant_id",
+            "date_time",
+            "party_size",
+            "subject",
+            "body",
+        }
+
+        for key, val in interpretation["slots"].items():
+            if key not in allowed_question_slots:
+                continue
+            if val is not None:
+                values[key][str(val)].append(interpretation["id"])
+
+        # Do not rely only on model-generated slot names.
+        # Derive the recipient contact directly from executable email plans.
+        for call in interpretation.get("plan", []):
+            if call.get("tool") not in {"email.send", "email.draft"}:
+                continue
+
+            recipient = str(call.get("args", {}).get("to", "")).casefold()
+            contact = next(
+                (
+                    item for item in run["sandbox"].get("contacts", [])
+                    if str(item.get("email", "")).casefold() == recipient
+                ),
+                None,
+            )
+
+            if contact:
+                values["contact_id"][str(contact["id"])].append(
+                    interpretation["id"]
+                )
+
+    differing = [
+        (slot, options)
+        for slot, options in values.items()
+        if len(options) > 1
+    ]
     if not differing: return None
-    slot, options = max(differing, key=lambda item: len(item[1]))
+    slot_priority = {
+        "contact_id": 100,
+        "restaurant_id": 90,
+        "recipient": 85,
+        "date_time": 70,
+        "party_size": 60,
+        "subject": 10,
+        "body": 5,
+    }
+    slot, options = max(
+        differing,
+        key=lambda item: (slot_priority.get(item[0], 30), len(item[1]))
+    )
     choices = []
     world = rehearsals[0]["sandbox"] if rehearsals else {}
     collection = "contacts" if slot == "contact_id" else "restaurants" if slot == "restaurant_id" else None
