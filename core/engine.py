@@ -254,6 +254,30 @@ def _enforce_contact_ambiguity(request_text: str, world: dict, items: list[dict]
 def _heuristic_proposals(text: str, world: dict) -> list[dict]:
     lower = text.casefold()
 
+    if any(word in lower for word in ("search email", "find email", "search my inbox", "find in inbox")):
+        query = re.sub(r"^(?:please\s+)?(?:search|find)(?:\s+my)?(?:\s+email|\s+inbox)?\s*", "", text, flags=re.I).strip() or text
+        return _five([{"slots": {}, "rationale": "Searches authorized Gmail messages without changing them.", "plan": [{"tool": "email.search", "args": {"query": query, "max_results": 10}}]}])
+
+    if any(phrase in lower for phrase in ("list expenses", "show expenses", "expense history", "recent expenses")):
+        return _five([{"slots": {}, "rationale": "Reads the persistent expense ledger without changing it.", "plan": [{"tool": "expenses.list", "args": {"limit": 100}}]}])
+
+    if any(phrase in lower for phrase in ("am i free", "check availability", "free on my calendar", "calendar availability")):
+        start = datetime.now(timezone.utc).replace(microsecond=0)
+        end = start + timedelta(days=1)
+        return _five([{"slots": {}, "rationale": "Checks Google Calendar free/busy information without changing events.", "plan": [{"tool": "calendar.check_availability", "args": {"start_time": start.isoformat(), "end_time": end.isoformat()}}]}])
+
+    if any(word in lower for word in ("cancel", "delete")) and any(word in lower for word in ("calendar", "event", "meeting")):
+        event = next((item for item in world.get("calendar_events", []) if str(item.get("title", "")).casefold() in lower), None)
+        event = event or (world.get("calendar_events") or [None])[0]
+        if event:
+            return _five([{"slots": {"event_id": event["id"]}, "rationale": f"Cancels the matching calendar event: {event.get('title', event['id'])}.", "plan": [{"tool": "calendar.cancel_event", "args": {"event_id": event["id"]}}]}])
+
+    if any(word in lower for word in ("reschedule", "move", "update")) and any(word in lower for word in ("calendar", "event", "meeting", "sync")):
+        event = next((item for item in world.get("calendar_events", []) if str(item.get("title", "")).casefold() in lower), None)
+        event = event or (world.get("calendar_events") or [None])[0]
+        if event:
+            return _five([{"slots": {"event_id": event["id"]}, "rationale": f"Updates the matching calendar event: {event.get('title', event['id'])}.", "plan": [{"tool": "calendar.update_event", "args": {"event_id": event["id"], "title": event.get("title", "Updated event")}}]}])
+
     # Multi-action request: Draft note to study group AND log expense (e.g. 40 rupees for tea)
     has_draft_note = any(word in lower for word in ("draft", "write", "note")) and "study group" in lower
     has_expense = any(word in lower for word in ("log", "record", "expense", "spent", "rupee", "rupees", "rs", "₹", "tea", "forty"))

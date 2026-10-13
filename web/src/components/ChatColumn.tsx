@@ -242,6 +242,7 @@ export function ChatColumn({
                           const numGroups = session.groups.length;
                           const isAct =
                             session.decision?.action === "act" || session.status === "completed";
+                          const isPending = ["ready", "awaiting_confirmation", "executing"].includes(session.status);
                           const hasIrreversible = session.groups.some((g) =>
                             g.effects.some((e) => e.reversibility === "irreversible")
                           );
@@ -249,7 +250,16 @@ export function ChatColumn({
                           let prefix = "";
                           let underlined = "";
 
-                          if (isAct) {
+                          if (isPending) {
+                            prefix = `${totalReadings} readings produced an exact live plan, `;
+                            underlined = "so I'm waiting for confirmation.";
+                          } else if (session.status === "cancelled") {
+                            prefix = "You cancelled the proposed action, ";
+                            underlined = "so nothing was executed.";
+                          } else if (session.status === "failed") {
+                            prefix = "The live provider returned an error, ";
+                            underlined = "so I am not claiming success.";
+                          } else if (isAct) {
                             if (numGroups <= 1) {
                               prefix = `All ${totalReadings} readings lead to the same outcome, `;
                               underlined = "so I'm acting.";

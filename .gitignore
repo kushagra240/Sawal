@@ -1,5 +1,6 @@
 # Environment & Secrets
 .env
+.data/
 .env.local
 .env.development.local
 .env.test.local
@@ -20,6 +21,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!web/src/lib/
+!web/src/lib/**
 lib64/
 parts/
 sdist/

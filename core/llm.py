@@ -13,7 +13,14 @@ import time
 import urllib.error
 import urllib.request
 
+from dotenv import load_dotenv
+
 from .tools import validate_call
+
+
+# Load developer-local credentials for the API server, benchmark probe, and
+# one-off scripts. Existing process environment variables retain precedence.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 
 OPEN_MODEL_PREFIXES = (
@@ -65,13 +72,19 @@ def _prompt(request_text: str, world: dict, count: int) -> str:
         f"Generate up to {count} distinct valid interpretations. "
         "Allowed tools only: "
         "contacts.search(query), "
+        "email.search(query,max_results), "
+        "email.read(message_id), "
         "calendar.list(start_date,end_date), "
+        "calendar.check_availability(start_time,end_time), "
         "calendar.create_event(title,start_time,end_time), "
+        "calendar.update_event(event_id,title,start_time,end_time), "
+        "calendar.cancel_event(event_id), "
         "restaurants.search(query), "
         "restaurants.book(restaurant_id,date_time,party_size), "
         "email.draft(to,subject,body), "
         "email.send(to,subject,body), "
-        "expenses.log(amount,currency,description). "
+        "expenses.log(amount,currency,description), "
+        "expenses.list(limit). "
         "Use IDs and email addresses that exist in the supplied world. "
         "Never invent contacts. "
         "Allowed ambiguity slots: contact_id, restaurant_id, date_time, "
@@ -306,7 +319,7 @@ def _gemini_call(model: str, prompt: str) -> str:
 
     endpoint = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{model}:generateContent?key={api_key}"
+        f"{model}:generateContent"
     )
 
     payload = {
@@ -318,13 +331,20 @@ def _gemini_call(model: str, prompt: str) -> str:
         ],
         "generationConfig": {
             "temperature": 0.2,
+            "maxOutputTokens": int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "2048")),
+            "thinkingConfig": {
+                "thinkingLevel": os.getenv("GEMMA_THINKING_LEVEL", "minimal"),
+            },
         },
     }
 
     return _http_json_call(
         endpoint=endpoint,
         payload=payload,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key,
+        },
         response_parser=_parse_gemini_candidate,
     )
 

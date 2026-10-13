@@ -3,6 +3,8 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChatColumn } from "@/components/ChatColumn";
+import { ActionConfirmation } from "@/components/ActionConfirmation";
+import { ConnectedAccountsPanel } from "@/components/ConnectedAccountsPanel";
 import { DebugPanel } from "@/components/DebugPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { Footer } from "@/components/Footer";
@@ -13,7 +15,7 @@ import { RegretRiskRuler } from "@/components/RegretRiskRuler";
 import { SentenceLine } from "@/components/SentenceLine";
 import { ShortcutsModal } from "@/components/ShortcutsModal";
 import { WorldStrip } from "@/components/WorldStrip";
-import { answerSession, createSession } from "@/lib/api";
+import { answerSession, cancelAction, confirmAction, createSession } from "@/lib/api";
 import { useSessionContext } from "@/lib/sessionContext";
 import { ChatTurn, LlmMode, Session } from "@/lib/types";
 
@@ -30,6 +32,8 @@ function MainContent() {
     activeSession,
     setActiveSession,
     recordSession,
+    toolMode,
+    setToolMode,
   } = useSessionContext();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -93,7 +97,7 @@ function MainContent() {
     setActiveTurnId(turnId);
 
     try {
-      const result = await createSession(requestText, llmMode);
+      const result = await createSession(requestText, llmMode, toolMode);
       const isFailed = result.status === "failed" && result.error;
 
       updateTurn(turnId, {
@@ -113,6 +117,28 @@ function MainContent() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleActionDecision = async (decision: "confirm" | "cancel") => {
+    if (!displayedSession || !currentActiveTurn) return;
+    setIsAnswering(true);
+    try {
+      const updated = decision === "confirm"
+        ? await confirmAction(displayedSession)
+        : await cancelAction(displayedSession);
+      updateTurn(currentActiveTurn.id, {
+        session: updated,
+        errorMessage: updated.status === "failed" ? updated.error?.message || "Live action failed." : null,
+      });
+      setActiveSession(updated);
+      recordSession(updated);
+    } catch (err: unknown) {
+      updateTurn(currentActiveTurn.id, {
+        errorMessage: err instanceof Error ? err.message : "Could not update the live action.",
+      });
+    } finally {
+      setIsAnswering(false);
     }
   };
 
@@ -169,6 +195,11 @@ function MainContent() {
 
       {/* Main Two-Column Assistant Workspace */}
       <main className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-1">
+        <ConnectedAccountsPanel
+          toolMode={toolMode}
+          onToolModeChange={setToolMode}
+          disabled={isLoading || isAnswering}
+        />
         <div className="flex flex-col min-[1200px]:flex-row gap-6 items-start">
           {/* LEFT: Assistant Chat Column (400-440px wide at >=1280px, pinned composer at bottom) */}
           <div className="w-full min-[1200px]:w-[420px] 2xl:w-[450px] min-[1200px]:shrink-0 h-[640px] min-[1200px]:h-[calc(100vh-125px)] min-[1200px]:sticky min-[1200px]:top-[68px] overflow-hidden">
@@ -210,6 +241,15 @@ function MainContent() {
                     setTimeout(() => setActiveSession(cur), 50);
                   }
                 }}
+              />
+            )}
+
+            {!isLoading && displayedSession && (
+              <ActionConfirmation
+                session={displayedSession}
+                busy={isAnswering}
+                onConfirm={() => void handleActionDecision("confirm")}
+                onCancel={() => void handleActionDecision("cancel")}
               />
             )}
 
