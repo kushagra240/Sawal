@@ -492,7 +492,7 @@ def _make_question(rehearsals: list[dict], groups: list[dict]) -> dict | None:
         group_ids = sorted({group_for_interp[x] for x in interp_ids})
         choices.append({"id": "opt-" + re.sub(r"[^a-z0-9-]", "-", value.casefold()), "label": label, "value": value, "target_group_ids": group_ids})
     question_text = "Which contact did you mean?" if slot == "contact_id" else "Which restaurant should I book?" if slot == "restaurant_id" else f"Which value should I use for {slot.replace('_', ' ')}?"
-    return {"id": f"q-slot-{slot}-01", "slot_name": slot, "question": question_text, "options": choices}
+    return {"id": f"q-slot-{slot}-01", "slot_name": slot, "text": question_text, "question": question_text, "options": choices}
 
 
 def _subject(text: str) -> str:
