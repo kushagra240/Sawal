@@ -29,6 +29,11 @@ def propose(request_text: str, world: dict, count: int = 5) -> list[dict] | None
         "restaurants.book(restaurant_id,date_time,party_size), email.draft(to,subject,body), "
         "email.send(to,subject,body), expenses.log(amount,currency,description). "
         "Use entity IDs/emails from the world. Never invent contacts or execute anything outside the mock world. "
+        "The slots object must represent unresolved user choices, not tool names or actions. "
+        "Allowed ambiguity slots are contact_id, restaurant_id, date_time, party_size, subject, and body. "
+        "Never create slots named action, tool, operation, intent, send_email, draft_email, search_contacts, or to. "
+        "If a first name matches multiple contacts, create separate interpretations for those contacts and set contact_id. "
+        "For ambiguous recipients, recipient identity has higher priority than subject wording. "
         f"Request: {request_text}\nWorld: {json.dumps(world, ensure_ascii=False)}"
     )
     payload = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2, "response_format": {"type": "json_object"}}).encode()
