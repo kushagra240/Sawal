@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -8,25 +8,71 @@ import {
   CreditCard,
   Globe2,
   Mail,
+  RefreshCw,
   RotateCcw,
 } from "lucide-react";
 import { ReversibilityBadge } from "@/components/ReversibilityBadge";
+import { fetchLiveWorld, resetLiveWorld } from "@/lib/api";
 import { useSessionContext } from "@/lib/sessionContext";
 import { Reversibility } from "@/lib/types";
 
 export default function WorldPage() {
-  const { accumulatedWorldDiff, clearWorld } = useSessionContext();
+  const { accumulatedWorldDiff, clearWorld, isMockMode } = useSessionContext();
+  const [liveWorld, setLiveWorld] = useState<Record<string, any> | null>(null);
+  const [isLoadingLive, setIsLoadingLive] = useState(!isMockMode);
+  const [isResetting, setIsResetting] = useState(false);
 
-  const calendarItems = accumulatedWorldDiff.filter((d) =>
+  const loadLiveWorld = async () => {
+    if (isMockMode) return;
+    setIsLoadingLive(true);
+    try {
+      const data = await fetchLiveWorld();
+      setLiveWorld(data);
+    } catch {
+      setLiveWorld(null);
+    } finally {
+      setIsLoadingLive(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLiveWorld();
+  }, [isMockMode]);
+
+  const handleReset = async () => {
+    setIsResetting(true);
+    if (!isMockMode) {
+      try {
+        const resetRes = await resetLiveWorld();
+        setLiveWorld(resetRes);
+      } catch (err) {
+        console.error("Failed to reset live world:", err);
+      }
+    }
+    clearWorld();
+    setIsResetting(false);
+  };
+
+  // Determine items based on mode
+  const calendarEvents = !isMockMode && liveWorld?.calendar_events
+    ? liveWorld.calendar_events
+    : [];
+  const emails = !isMockMode && liveWorld?.emails ? liveWorld.emails : [];
+  const reservations = !isMockMode && liveWorld?.reservations
+    ? liveWorld.reservations
+    : [];
+  const expenses = !isMockMode && liveWorld?.expenses ? liveWorld.expenses : [];
+
+  const mockCalendar = accumulatedWorldDiff.filter((d) =>
     d.entity.toLowerCase().includes("calendar")
   );
-  const outboxItems = accumulatedWorldDiff.filter(
+  const mockOutbox = accumulatedWorldDiff.filter(
     (d) =>
       d.entity.toLowerCase().includes("email") ||
       d.entity.toLowerCase().includes("outbox") ||
       d.entity.toLowerCase().includes("facilities")
   );
-  const expenseItems = accumulatedWorldDiff.filter(
+  const mockExpenses = accumulatedWorldDiff.filter(
     (d) =>
       d.entity.toLowerCase().includes("expense") ||
       d.entity.toLowerCase().includes("notes")
@@ -55,144 +101,252 @@ export default function WorldPage() {
 
         <div className="flex items-center gap-3">
           <span className="text-xs font-mono text-[#6E6253]">
-            Changes made in this browser session
+            {!isMockMode
+              ? "Live backend state (GET /v1/world)"
+              : "Changes made in this browser session"}
           </span>
           <button
             type="button"
-            onClick={clearWorld}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#DDD0BA] bg-surface text-xs font-semibold text-[#231B12] hover:bg-[#EBDFCB] transition-colors cursor-pointer shadow-sawal-sm"
+            onClick={handleReset}
+            disabled={isResetting || isLoadingLive}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#DDD0BA] bg-surface text-xs font-semibold text-[#231B12] hover:bg-[#EBDFCB] transition-colors cursor-pointer shadow-sawal-sm disabled:opacity-50"
           >
-            <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
+            <RotateCcw
+              className={`w-3.5 h-3.5 ${isResetting ? "animate-spin" : ""}`}
+              strokeWidth={1.5}
+            />
             <span>Reset</span>
           </button>
         </div>
       </div>
 
-      {/* 3 Domain Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Domain 1: Calendar */}
-        <div className="rounded-[12px] border border-[#DDD0BA] bg-surface p-5 shadow-sawal-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-[#DDD0BA] pb-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[#17494D]" strokeWidth={1.5} />
-              <h3 className="font-serif font-bold text-base text-[#231B12]">
-                Calendar Sync
-              </h3>
+      {isLoadingLive ? (
+        <div className="p-12 text-center rounded-[12px] border border-[#DDD0BA] bg-surface space-y-3">
+          <RefreshCw className="w-8 h-8 mx-auto animate-spin text-[#17494D]" strokeWidth={1.5} />
+          <p className="text-sm font-mono text-[#6E6253]">
+            Fetching live world state from backend...
+          </p>
+        </div>
+      ) : (
+        /* 3 Domain Cards Grid */
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Domain 1: Calendar */}
+          <div className="rounded-[12px] border border-[#DDD0BA] bg-surface p-5 shadow-sawal-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DDD0BA] pb-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[#17494D]" strokeWidth={1.5} />
+                <h3 className="font-serif font-bold text-base text-[#231B12]">
+                  Calendar Sync
+                </h3>
+              </div>
+              <span className="text-xs font-mono text-[#6E6253]">
+                {!isMockMode
+                  ? `${calendarEvents.length} events`
+                  : `${mockCalendar.length} changes`}
+              </span>
             </div>
-            <span className="text-xs font-mono text-[#6E6253]">
-              {calendarItems.length} changes
-            </span>
+
+            {!isMockMode ? (
+              calendarEvents.length === 0 ? (
+                <p className="text-xs text-[#6E6253] font-sans py-4 text-center">
+                  No calendar events in world state.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {calendarEvents.map((evt: any, i: number) => (
+                    <div
+                      key={evt.id || i}
+                      className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1"
+                    >
+                      <div className="font-semibold text-[#231B12]">{evt.title}</div>
+                      <div className="text-[11px] font-mono text-[#6E6253]">
+                        {evt.start_time ? new Date(evt.start_time).toLocaleString() : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : mockCalendar.length === 0 ? (
+              <p className="text-xs text-[#6E6253] font-sans py-4 text-center">
+                No calendar events queried or booked yet.
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {mockCalendar.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-mono text-[10px] uppercase font-bold text-[#17494D]">
+                        {item.op}
+                      </span>
+                      <ReversibilityBadge
+                        reversibility={item.reversibility as Reversibility}
+                        size="sm"
+                      />
+                    </div>
+                    <p className="font-medium text-[#231B12]">{item.summary}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {calendarItems.length === 0 ? (
-            <p className="text-xs text-[#6E6253] font-sans py-4 text-center">
-              No calendar events queried or booked yet.
-            </p>
-          ) : (
-            <div className="space-y-2.5">
-              {calendarItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1.5"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-mono text-[10px] uppercase font-bold text-[#17494D]">
-                      {item.op}
-                    </span>
-                    <ReversibilityBadge
-                      reversibility={item.reversibility as Reversibility}
-                      size="sm"
-                    />
-                  </div>
-                  <p className="font-medium text-[#231B12]">{item.summary}</p>
-                </div>
-              ))}
+          {/* Domain 2: Outbox */}
+          <div className="rounded-[12px] border border-[#DDD0BA] bg-surface p-5 shadow-sawal-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DDD0BA] pb-3">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-[#17494D]" strokeWidth={1.5} />
+                <h3 className="font-serif font-bold text-base text-[#231B12]">
+                  Outbox Dispatches
+                </h3>
+              </div>
+              <span className="text-xs font-mono text-[#6E6253]">
+                {!isMockMode
+                  ? `${emails.length + reservations.length} records`
+                  : `${mockOutbox.length} dispatches`}
+              </span>
             </div>
-          )}
-        </div>
 
-        {/* Domain 2: Outbox */}
-        <div className="rounded-[12px] border border-[#DDD0BA] bg-surface p-5 shadow-sawal-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-[#DDD0BA] pb-3">
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-[#17494D]" strokeWidth={1.5} />
-              <h3 className="font-serif font-bold text-base text-[#231B12]">
-                Outbox Dispatches
-              </h3>
-            </div>
-            <span className="text-xs font-mono text-[#6E6253]">
-              {outboxItems.length} committed
-            </span>
+            {!isMockMode ? (
+              emails.length === 0 && reservations.length === 0 ? (
+                <p className="text-xs text-[#6E6253] font-sans py-4 text-center">
+                  No emails or reservations in world state.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {emails.map((em: any, i: number) => (
+                    <div
+                      key={em.id || i}
+                      className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1"
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="font-mono text-[10px] font-bold text-[#17494D]">
+                          {em.status === "sent" ? "SENT" : "DRAFT"}
+                        </span>
+                        <ReversibilityBadge
+                          reversibility={em.status === "sent" ? "irreversible" : "reversible"}
+                          size="sm"
+                        />
+                      </div>
+                      <p className="font-medium text-[#231B12] truncate">
+                        {em.to}: {em.subject}
+                      </p>
+                    </div>
+                  ))}
+                  {reservations.map((res: any, i: number) => (
+                    <div
+                      key={res.id || i}
+                      className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1"
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="font-mono text-[10px] font-bold text-[#734706]">
+                          RESERVATION
+                        </span>
+                        <ReversibilityBadge reversibility="irreversible" size="sm" />
+                      </div>
+                      <p className="font-medium text-[#231B12]">
+                        {res.party_size} guests at {res.restaurant_id}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : mockOutbox.length === 0 ? (
+              <p className="text-xs text-[#6E6253] font-sans py-4 text-center">
+                Outbox is clean. No outbound emails or reservations committed.
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {mockOutbox.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-mono text-[10px] uppercase font-bold text-[#17494D]">
+                        {item.op}
+                      </span>
+                      <ReversibilityBadge
+                        reversibility={item.reversibility as Reversibility}
+                        size="sm"
+                      />
+                    </div>
+                    <p className="font-medium text-[#231B12]">{item.summary}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {outboxItems.length === 0 ? (
-            <p className="text-xs text-[#6E6253] font-sans py-4 text-center">
-              No outgoing messages or external reservations committed yet.
-            </p>
-          ) : (
-            <div className="space-y-2.5">
-              {outboxItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1.5"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-mono text-[10px] uppercase font-bold text-[#A33A2B]">
-                      {item.op}
-                    </span>
-                    <ReversibilityBadge
-                      reversibility={item.reversibility as Reversibility}
-                      size="sm"
-                    />
-                  </div>
-                  <p className="font-medium text-[#231B12]">{item.summary}</p>
-                </div>
-              ))}
+          {/* Domain 3: Expenses Ledger */}
+          <div className="rounded-[12px] border border-[#DDD0BA] bg-surface p-5 shadow-sawal-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DDD0BA] pb-3">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-[#17494D]" strokeWidth={1.5} />
+                <h3 className="font-serif font-bold text-base text-[#231B12]">
+                  Expenses Ledger
+                </h3>
+              </div>
+              <span className="text-xs font-mono text-[#6E6253]">
+                {!isMockMode
+                  ? `${expenses.length} entries`
+                  : `${mockExpenses.length} entries`}
+              </span>
             </div>
-          )}
-        </div>
 
-        {/* Domain 3: Expenses & Notes */}
-        <div className="rounded-[12px] border border-[#DDD0BA] bg-surface p-5 shadow-sawal-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-[#DDD0BA] pb-3">
-            <div className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-[#17494D]" strokeWidth={1.5} />
-              <h3 className="font-serif font-bold text-base text-[#231B12]">
-                Expenses &amp; Notes
-              </h3>
-            </div>
-            <span className="text-xs font-mono text-[#6E6253]">
-              {expenseItems.length} records
-            </span>
+            {!isMockMode ? (
+              expenses.length === 0 ? (
+                <p className="text-xs text-[#6E6253] font-sans py-4 text-center">
+                  No expense records logged in world state.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {expenses.map((exp: any, i: number) => (
+                    <div
+                      key={exp.id || i}
+                      className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-[#231B12]">
+                          ₹{exp.amount} {exp.currency || "INR"}
+                        </span>
+                        <ReversibilityBadge reversibility="reversible" size="sm" />
+                      </div>
+                      <p className="text-[#6E6253]">{exp.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : mockExpenses.length === 0 ? (
+              <p className="text-xs text-[#6E6253] font-sans py-4 text-center">
+                Current billing cycle has zero mutation entries.
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {mockExpenses.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-mono text-[10px] uppercase font-bold text-[#17494D]">
+                        {item.op}
+                      </span>
+                      <ReversibilityBadge
+                        reversibility={item.reversibility as Reversibility}
+                        size="sm"
+                      />
+                    </div>
+                    <p className="font-medium text-[#231B12]">{item.summary}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-
-          {expenseItems.length === 0 ? (
-            <p className="text-xs text-[#6E6253] font-sans py-4 text-center">
-              No notes drafts or expenses recorded yet.
-            </p>
-          ) : (
-            <div className="space-y-2.5">
-              {expenseItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3 rounded-[8px] bg-[#F4EBDD] border border-[#DDD0BA] text-xs space-y-1.5"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-mono text-[10px] uppercase font-bold text-[#8A5A0B]">
-                      {item.op}
-                    </span>
-                    <ReversibilityBadge
-                      reversibility={item.reversibility as Reversibility}
-                      size="sm"
-                    />
-                  </div>
-                  <p className="font-medium text-[#231B12]">{item.summary}</p>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

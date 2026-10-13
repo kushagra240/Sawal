@@ -212,7 +212,7 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
                           {POLICY_LABELS[p.name] || p.name}
                         </span>
                         {isSawal && (
-                          <span className="px-2 py-0.5 rounded-[4px] text-[10px] font-mono font-bold bg-[#17494D] text-white uppercase">
+                          <span className="px-2 py-0.5 rounded-[4px] text-[10px] font-mono font-bold bg-[#17494D] text-surface uppercase">
                             Target
                           </span>
                         )}

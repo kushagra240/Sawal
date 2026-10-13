@@ -103,20 +103,52 @@ function BenchmarkContent() {
       {isSample && (
         <div
           role="alert"
-          className="rounded-[12px] border-2 border-[#A33A2B] bg-[#A33A2B] text-white p-4 sm:p-5 shadow-sawal-md flex items-center gap-3.5"
+          className="rounded-[12px] border-2 border-[#A33A2B] bg-[#A33A2B] text-surface p-4 sm:p-5 shadow-sawal-md flex items-center gap-3.5"
         >
-          <AlertOctagon className="w-7 h-7 shrink-0 text-white" strokeWidth={1.5} />
+          <AlertOctagon className="w-7 h-7 shrink-0 text-surface" strokeWidth={1.5} />
           <div className="space-y-0.5">
             <h2 className="text-base sm:text-lg font-mono font-black tracking-wide uppercase">
               SAMPLE DATA, NOT A REAL RUN
             </h2>
             <p className="text-xs sm:text-sm text-rose-100 font-sans">
               This benchmark view is displaying synthetic demonstration data loaded from{" "}
-              <code className="bg-[#782316] px-1.5 py-0.5 rounded text-white font-mono">
+              <code className="bg-[#782316] px-1.5 py-0.5 rounded text-surface font-mono">
                 public/benchmark_results.sample.json
               </code>
               . These numbers are illustrative placeholders and not experimental results.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* DETERMINISTIC MOCK PROPOSER BANNER */}
+      {benchmarkData?.execution_mode === "deterministic_mock" && (
+        <div
+          role="alert"
+          className="rounded-[12px] border border-[#734706] bg-[#FBF1DC] p-4 sm:p-5 shadow-sawal-md space-y-2 text-[#231B12]"
+        >
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#734706]" />
+            <h2 className="text-sm sm:text-base font-mono font-bold tracking-wide uppercase text-[#734706]">
+              Deterministic mock proposer. These numbers test the engine, not a language model
+            </h2>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-[#6E6253]">
+            {benchmarkData.tasks_count !== undefined && (
+              <span>
+                Tasks: <strong className="text-[#231B12]">{benchmarkData.tasks_count}</strong>
+              </span>
+            )}
+            {benchmarkData.timestamp && (
+              <span>
+                Timestamp: <strong className="text-[#231B12]">{benchmarkData.timestamp}</strong>
+              </span>
+            )}
+            {benchmarkData.note && (
+              <span>
+                Note: <strong className="text-[#231B12]">{benchmarkData.note}</strong>
+              </span>
+            )}
           </div>
         </div>
       )}

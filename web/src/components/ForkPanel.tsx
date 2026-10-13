@@ -178,8 +178,43 @@ export function ForkPanel({
                 {drawnCount} OF {totalReadings} DRAWN
               </span>
 
+              {/* Proposer Honesty Chip */}
+              {(() => {
+                const prop = session?.proposer;
+                if (!prop) {
+                  return (
+                    <span className="px-2.5 py-1 rounded-[6px] bg-sunken border border-[#DDD0BA] text-[#6E6253] text-[11px]">
+                      Proposer: unknown
+                    </span>
+                  );
+                }
+                if (prop.toLowerCase() === "replay") {
+                  return (
+                    <span className="px-2.5 py-1 rounded-[6px] bg-[#DCE9E6] border border-[#17494D]/30 text-[#17494D] text-[11px] font-semibold">
+                      Replay
+                    </span>
+                  );
+                }
+                if (
+                  prop === "deterministic_mock" ||
+                  prop.toLowerCase().includes("fallback") ||
+                  prop.toLowerCase().includes("deterministic")
+                ) {
+                  return (
+                    <span className="px-2.5 py-1 rounded-[6px] bg-[#FBF1DC] border border-[#734706]/30 text-[#734706] text-[11px] font-semibold">
+                      Fallback proposer (no model call)
+                    </span>
+                  );
+                }
+                return (
+                  <span className="px-2.5 py-1 rounded-[6px] bg-[#DCE9E6] border border-[#17494D]/30 text-[#17494D] text-[11px] font-semibold">
+                    Proposer: {prop}
+                  </span>
+                );
+              })()}
+
               {session?.decision?.low_diversity && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-[#FBF1DC] border border-[#8A5A0B]/30 text-[#8A5A0B] font-bold text-[11px]">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-[#FBF1DC] border border-[#734706]/30 text-[#734706] font-bold text-[11px]">
                   <AlertCircle className="w-3 h-3" strokeWidth={1.5} />
                   <span>LOW DIVERSITY</span>
                 </span>
