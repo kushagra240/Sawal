@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Clock, History, Trash2 } from "lucide-react";
 import { useSessionContext } from "@/lib/sessionContext";
+import { Session } from "@/lib/types";
 
 export default function HistoryPage() {
   const router = useRouter();
   const { history, clearHistory, setActiveSession } = useSessionContext();
 
-  const handleOpenSession = (sess: any) => {
+  const handleOpenSession = (sess: Session) => {
     setActiveSession(sess);
     router.push("/");
   };
