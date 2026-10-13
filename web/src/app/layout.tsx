@@ -6,6 +6,7 @@ import {
   Noto_Serif_Devanagari,
 } from "next/font/google";
 import "./globals.css";
+import { SessionProvider } from "@/lib/sessionContext";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -49,7 +50,7 @@ export default function RootLayout({
       className={`${fraunces.variable} ${instrumentSans.variable} ${jetbrainsMono.variable} ${notoSerifDevanagari.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-[#FBF8F3] text-[#1C1B19]">
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

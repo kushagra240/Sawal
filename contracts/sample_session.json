@@ -12,73 +12,83 @@
     "interpretations": [
       {
         "id": "interp-1",
-        "rationale": "Email Dr. Priya Sharma (Lab Lead) regarding tomorrow's verified robotics workstation slot.",
+        "rationale": "Target Dr. Priya Sharma (Lab Lead, Room 402) for cleanroom instrumentation slot.",
         "group_id": "grp-sharma",
         "plan": [
-          { "tool": "contacts.search", "args": { "query": "Priya Sharma" } },
-          { "tool": "email.send", "args": { "to": "priya.sharma@lab.univ.edu", "subject": "Lab Slot Confirmation" } }
+          { "tool": "contacts.search", "args": { "query": "Priya Sharma", "role": "Lab Lead" } },
+          { "tool": "calendar.read", "args": { "room": "EE-402 Cleanroom" } },
+          { "tool": "email.send", "args": { "to": "priya.sharma@uni.example", "subject": "Lab Slot Confirmation" } }
         ],
         "effects": [
           {
-            "summary": "Send email to priya.sharma@lab.univ.edu confirming 3:00 PM slot",
+            "summary": "Email sent to Priya Sharma (Lab Lead)",
+            "detail": "Re: EE-402 Cleanroom slot confirmation · High impact",
             "reversibility": "irreversible"
           }
         ]
       },
       {
         "id": "interp-2",
-        "rationale": "Assume Dr. Sharma and append calendar invite attachment to lab slot confirmation.",
+        "rationale": "Notify Dr. Priya Sharma with calendar invite attachment for reserved workbench.",
         "group_id": "grp-sharma",
         "plan": [
-          { "tool": "contacts.get", "args": { "id": "contact_priya_sharma" } },
-          { "tool": "email.send", "args": { "to": "priya.sharma@lab.univ.edu", "subject": "Slot Confirmation & Invite" } }
+          { "tool": "contacts.search", "args": { "query": "Priya Sharma" } },
+          { "tool": "calendar.read", "args": { "slot": "3:00 PM" } },
+          { "tool": "email.send", "args": { "to": "priya.sharma@uni.example", "subject": "Slot Confirmed" } }
         ],
         "effects": [
           {
-            "summary": "Send email to priya.sharma@lab.univ.edu confirming 3:00 PM slot",
+            "summary": "Email sent to Priya Sharma (Lab Lead)",
+            "detail": "Re: EE-402 Cleanroom slot confirmation · High impact",
             "reversibility": "irreversible"
           }
         ]
       },
       {
         "id": "interp-3",
-        "rationale": "Notify Dr. Priya Sharma with priority flag set for upcoming bench slot assignment.",
+        "rationale": "Direct confirmation to Lab Lead Priya Sharma on Cleanroom calibration bench.",
         "group_id": "grp-sharma",
         "plan": [
-          { "tool": "email.send", "args": { "to": "priya.sharma@lab.univ.edu", "subject": "Confirmed: Lab Slot" } }
+          { "tool": "messages.search", "args": { "thread": "Cleanroom calibration" } },
+          { "tool": "email.send", "args": { "to": "priya.sharma@uni.example", "subject": "Bench Slot 4 Confirmed" } }
         ],
         "effects": [
           {
-            "summary": "Send email to priya.sharma@lab.univ.edu confirming 3:00 PM slot",
+            "summary": "Email sent to Priya Sharma (Lab Lead)",
+            "detail": "Re: EE-402 Cleanroom slot confirmation · High impact",
             "reversibility": "irreversible"
           }
         ]
       },
       {
         "id": "interp-4",
-        "rationale": "Email Priya Kulkarni (OS lab project partner) to confirm shared workstation time.",
+        "rationale": "Email Priya Kulkarni (Classmate, OS group partner) regarding paired programming bench.",
         "group_id": "grp-kulkarni",
         "plan": [
-          { "tool": "contacts.search", "args": { "query": "Priya Kulkarni" } },
-          { "tool": "email.send", "args": { "to": "p.kulkarni@student.univ.edu", "subject": "Confirmed Lab Slot for OS Project" } }
+          { "tool": "contacts.search", "args": { "query": "Priya Kulkarni", "affiliation": "Student" } },
+          { "tool": "messages.search", "args": { "thread": "Problem set 3 study" } },
+          { "tool": "email.send", "args": { "to": "p.kulkarni@student.example", "subject": "OS Lab Slot Confirmed" } }
         ],
         "effects": [
           {
-            "summary": "Send email to p.kulkarni@student.univ.edu confirming 3:00 PM slot",
+            "summary": "Email sent to Priya Kulkarni (Classmate)",
+            "detail": "Re: Study partner lab session slot · High impact",
             "reversibility": "irreversible"
           }
         ]
       },
       {
         "id": "interp-5",
-        "rationale": "Send note to classmate Priya Kulkarni confirming bench availability in Lab 3.",
+        "rationale": "Send sync note to classmate Priya Kulkarni to coordinate OS lab slot arrival.",
         "group_id": "grp-kulkarni",
         "plan": [
-          { "tool": "email.send", "args": { "to": "p.kulkarni@student.univ.edu", "subject": "Lab slot confirmed" } }
+          { "tool": "messages.search", "args": { "query": "Priya Kulkarni" } },
+          { "tool": "email.send", "args": { "to": "p.kulkarni@student.example", "subject": "Lab Slot Update" } }
         ],
         "effects": [
           {
-            "summary": "Send email to p.kulkarni@student.univ.edu confirming 3:00 PM slot",
+            "summary": "Email sent to Priya Kulkarni (Classmate)",
+            "detail": "Re: Study partner lab session slot · High impact",
             "reversibility": "irreversible"
           }
         ]
@@ -88,9 +98,11 @@
       {
         "id": "grp-sharma",
         "size": 3,
+        "label": "Email sent to Priya Sharma (Lab Lead)",
         "effects": [
           {
-            "summary": "Send email to priya.sharma@lab.univ.edu confirming 3:00 PM slot",
+            "summary": "Email sent to Priya Sharma (Lab Lead)",
+            "detail": "Re: EE-402 Cleanroom slot confirmation · High impact",
             "reversibility": "irreversible"
           }
         ]
@@ -98,35 +110,49 @@
       {
         "id": "grp-kulkarni",
         "size": 2,
+        "label": "Email sent to Priya Kulkarni (Classmate)",
         "effects": [
           {
-            "summary": "Send email to p.kulkarni@student.univ.edu confirming 3:00 PM slot",
+            "summary": "Email sent to Priya Kulkarni (Classmate)",
+            "detail": "Re: Study partner lab session slot · High impact",
             "reversibility": "irreversible"
           }
         ]
       }
     ],
     "question": {
-      "id": "q-priya-recipient",
-      "text": "Which Priya did you mean to email about the lab slot?",
+      "id": "q-priya-target",
+      "text": "Which Priya?",
       "options": [
         {
           "id": "opt-sharma",
-          "label": "Priya Sharma (Lab Lead, AI Lab)"
+          "label": "Priya Sharma",
+          "description": "Lab Lead · ECE Dept",
+          "meta": [
+            "priya.sharma@uni.example",
+            "Recent thread: Cleanroom calibration"
+          ],
+          "matched": 3
         },
         {
           "id": "opt-kulkarni",
-          "label": "Priya Kulkarni (Classmate, OS Partner)"
+          "label": "Priya Kulkarni",
+          "description": "Classmate · Group 4",
+          "meta": [
+            "p.kulkarni@student.example",
+            "Recent thread: Problem set 3 study"
+          ],
+          "matched": 2
         }
       ]
     },
     "result": null,
     "trace": [
-      { "step": 1, "message": "Synthesized 5 candidate interpretations from vague request" },
-      { "step": 2, "message": "Rehearsed candidate plans in sandbox environment" },
-      { "step": 3, "message": "Identified 2 disjoint outcome clusters with irreversible action (email.send)" },
-      { "step": 4, "message": "Calculated expected regret R(act)=0.82 exceeding threshold tau=0.35" },
-      { "step": 5, "message": "Formulated disambiguation question with 2 high-entropy options" }
+      { "step": 1, "message": "Parsed vague recipient entity 'Priya' with high ambiguity (2 entities found)" },
+      { "step": 2, "message": "Rehearsed 5 candidate readings across university directory and recent threads" },
+      { "step": 3, "message": "Discovered 2 mutually exclusive outcome clusters with irreversible action (email.send)" },
+      { "step": 4, "message": "Calculated expected regret R(act)=0.82 exceeding decision threshold tau=0.35" },
+      { "step": 5, "message": "Halted execution to formulate targeted disambiguation question: 'Which Priya?'" }
     ],
     "error": null
   },
@@ -146,11 +172,13 @@
         "rationale": "Query user calendar for scheduled events between 12:00 PM and 5:00 PM tomorrow.",
         "group_id": "grp-cal",
         "plan": [
-          { "tool": "calendar.list_events", "args": { "start": "tomorrowT12:00", "end": "tomorrowT17:00" } }
+          { "tool": "calendar.read", "args": { "start": "tomorrowT12:00", "end": "tomorrowT17:00" } },
+          { "tool": "calendar.list_events", "args": {} }
         ],
         "effects": [
           {
-            "summary": "Read calendar events between 12:00 PM and 5:00 PM tomorrow",
+            "summary": "Read calendar events for tomorrow afternoon",
+            "detail": "CS Seminar (2:00 PM), Advisor Sync (3:30 PM)",
             "reversibility": "readonly"
           }
         ]
@@ -160,11 +188,13 @@
         "rationale": "Query calendar extending afternoon window to 6:00 PM to capture late symposiums.",
         "group_id": "grp-cal",
         "plan": [
-          { "tool": "calendar.list_events", "args": { "start": "tomorrowT12:00", "end": "tomorrowT18:00" } }
+          { "tool": "calendar.read", "args": { "start": "tomorrowT12:00", "end": "tomorrowT18:00" } },
+          { "tool": "calendar.list_events", "args": {} }
         ],
         "effects": [
           {
-            "summary": "Read calendar events between 12:00 PM and 6:00 PM tomorrow",
+            "summary": "Read calendar events for tomorrow afternoon",
+            "detail": "CS Seminar (2:00 PM), Advisor Sync (3:30 PM)",
             "reversibility": "readonly"
           }
         ]
@@ -174,11 +204,12 @@
         "rationale": "Query afternoon meetings with location coordinates included.",
         "group_id": "grp-cal",
         "plan": [
-          { "tool": "calendar.list_events", "args": { "start": "tomorrowT12:00", "end": "tomorrowT17:00", "expand": "locations" } }
+          { "tool": "calendar.read", "args": { "timeframe": "afternoon" } }
         ],
         "effects": [
           {
-            "summary": "Read calendar events between 12:00 PM and 5:00 PM tomorrow",
+            "summary": "Read calendar events for tomorrow afternoon",
+            "detail": "CS Seminar (2:00 PM), Advisor Sync (3:30 PM)",
             "reversibility": "readonly"
           }
         ]
@@ -188,11 +219,12 @@
         "rationale": "Check tomorrow's calendar agenda view specifically filtering afternoon entries.",
         "group_id": "grp-cal",
         "plan": [
-          { "tool": "calendar.get_agenda", "args": { "date": "tomorrow", "timeframe": "afternoon" } }
+          { "tool": "calendar.read", "args": { "start": "tomorrowT13:00", "end": "tomorrowT17:00" } }
         ],
         "effects": [
           {
-            "summary": "Read calendar agenda for tomorrow afternoon",
+            "summary": "Read calendar events for tomorrow afternoon",
+            "detail": "CS Seminar (2:00 PM), Advisor Sync (3:30 PM)",
             "reversibility": "readonly"
           }
         ]
@@ -202,11 +234,12 @@
         "rationale": "Read user schedule and free/busy slots across 1:00 PM - 5:00 PM tomorrow.",
         "group_id": "grp-cal",
         "plan": [
-          { "tool": "calendar.list_events", "args": { "start": "tomorrowT13:00", "end": "tomorrowT17:00" } }
+          { "tool": "calendar.list_events", "args": { "range": "pm" } }
         ],
         "effects": [
           {
-            "summary": "Read calendar events between 1:00 PM and 5:00 PM tomorrow",
+            "summary": "Read calendar events for tomorrow afternoon",
+            "detail": "CS Seminar (2:00 PM), Advisor Sync (3:30 PM)",
             "reversibility": "readonly"
           }
         ]
@@ -216,9 +249,11 @@
       {
         "id": "grp-cal",
         "size": 5,
+        "label": "Read Calendar Schedule",
         "effects": [
           {
             "summary": "Read calendar events for tomorrow afternoon",
+            "detail": "CS Seminar (2:00 PM), Advisor Sync (3:30 PM)",
             "reversibility": "readonly"
           }
         ]
@@ -229,7 +264,7 @@
       "executed_tools": ["calendar.list_events"],
       "world_diff": [
         {
-          "entity": "calendar.cache",
+          "entity": "calendar.query_cache",
           "op": "read",
           "summary": "Found 2 events: 2:00 PM ML Reading Group (Room 101), 4:00 PM Office Hours with Prof. Roy",
           "reversibility": "readonly"
@@ -237,11 +272,11 @@
       ]
     },
     "trace": [
-      { "step": 1, "message": "Synthesized 5 candidate interpretations from user prompt" },
-      { "step": 2, "message": "Rehearsed candidate plans in sandbox environment" },
-      { "step": 3, "message": "All 5 candidate plans collapsed to readonly calendar query" },
-      { "step": 4, "message": "Calculated expected regret R(act)=0.02 well below threshold tau=0.35" },
-      { "step": 5, "message": "Safe to proceed: executed calendar.list_events directly without interrupting user" }
+      { "step": 1, "message": "Parsed intent: inspect tomorrow afternoon schedule" },
+      { "step": 2, "message": "Rehearsed 5 candidate queries in sandbox" },
+      { "step": 3, "message": "All 5 candidate queries collapsed into safe read-only queries" },
+      { "step": 4, "message": "Calculated expected regret R(act)=0.02 << threshold tau=0.35" },
+      { "step": 5, "message": "Safe to act: executed calendar.list_events directly" }
     ],
     "error": null
   }
