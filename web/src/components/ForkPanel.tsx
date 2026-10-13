@@ -23,7 +23,6 @@ export function ForkPanel({
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 1100, height: 380 });
   const [drawnCount, setDrawnCount] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
   const componentId = useId();
 
   const interpretations = session?.interpretations || [];
@@ -52,27 +51,18 @@ export function ForkPanel({
 
   // Reveal animation: Staggered 90ms, counts k of N drawn
   useEffect(() => {
-    if (isLoading) {
-      setDrawnCount(0);
-      setIsAnimating(false);
-      return;
-    }
+    if (isLoading || totalReadings === 0) return;
 
-    if (totalReadings > 0) {
-      setIsAnimating(true);
-      setDrawnCount(0);
-      let count = 0;
-      const interval = setInterval(() => {
-        count += 1;
-        setDrawnCount(count);
-        if (count >= totalReadings) {
-          clearInterval(interval);
-          setIsAnimating(false);
-        }
-      }, 90);
+    let count = 0;
+    const interval = setInterval(() => {
+      count += 1;
+      setDrawnCount(count);
+      if (count >= totalReadings) {
+        clearInterval(interval);
+      }
+    }, 90);
 
-      return () => clearInterval(interval);
-    }
+    return () => clearInterval(interval);
   }, [isLoading, totalReadings, session?.session_id]);
 
   // Compute guess error risk

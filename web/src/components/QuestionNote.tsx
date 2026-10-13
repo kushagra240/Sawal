@@ -41,6 +41,17 @@ export function QuestionNote({
     }
   }, [activeGroupId, onOptionSelect]);
 
+  const handleSelectOption = (optionId: string) => {
+    setSelectedOptionId(optionId);
+    const gid = optionGroupMap[optionId] || null;
+    if (onOptionSelect) onOptionSelect(gid);
+  };
+
+  const handleConfirm = () => {
+    if (!selectedOptionId || isAnswering) return;
+    onAnswer({ option_id: selectedOptionId });
+  };
+
   // Keys 1 and 2 to select options, Enter to confirm
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -60,18 +71,7 @@ export function QuestionNote({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [question.options, selectedOptionId, isAnswering]);
-
-  const handleSelectOption = (optionId: string) => {
-    setSelectedOptionId(optionId);
-    const gid = optionGroupMap[optionId] || null;
-    if (onOptionSelect) onOptionSelect(gid);
-  };
-
-  const handleConfirm = () => {
-    if (!selectedOptionId || isAnswering) return;
-    onAnswer({ option_id: selectedOptionId });
-  };
+  });
 
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();

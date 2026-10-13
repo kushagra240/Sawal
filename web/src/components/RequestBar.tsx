@@ -25,13 +25,13 @@ export function RequestBar({
   activeChipText = "",
 }: RequestBarProps) {
   const [inputText, setInputText] = useState(initialValue);
+  const [prevInitial, setPrevInitial] = useState(initialValue);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (initialValue) {
-      setInputText(initialValue);
-    }
-  }, [initialValue]);
+  if (initialValue !== prevInitial) {
+    setPrevInitial(initialValue);
+    setInputText(initialValue);
+  }
 
   // Focus with '/' shortcut
   useEffect(() => {
