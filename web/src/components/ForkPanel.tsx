@@ -361,7 +361,7 @@ export function ForkPanel({
         {/* Station Chips along threads: Tools on interpretations */}
         {interpretationThreads.map((thread) => {
           if (!thread.tools || thread.tools.length === 0) return null;
-          const isDrawn = thread.index < drawnCount || !isAnimating;
+          const isDrawn = thread.index < drawnCount || drawnCount >= totalReadings;
           if (!isDrawn) return null;
 
           const spreadY = (thread.index - (totalReadings - 1) / 2) * 14;
