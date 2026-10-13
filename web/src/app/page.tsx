@@ -169,9 +169,9 @@ function MainContent() {
 
       {/* Main Two-Column Assistant Workspace */}
       <main className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-1">
-        <div className="flex flex-col xl:flex-row gap-6 items-start">
+        <div className="flex flex-col min-[1200px]:flex-row gap-6 items-start">
           {/* LEFT: Assistant Chat Column (400-440px wide at >=1280px, pinned composer at bottom) */}
-          <div className="w-full xl:w-[420px] 2xl:w-[450px] xl:shrink-0 h-[640px] xl:h-[calc(100vh-125px)] xl:sticky xl:top-[68px]">
+          <div className="w-full min-[1200px]:w-[420px] 2xl:w-[450px] min-[1200px]:shrink-0 h-[640px] min-[1200px]:h-[calc(100vh-125px)] min-[1200px]:sticky min-[1200px]:top-[68px] overflow-hidden">
             <ChatColumn
               turns={turns}
               activeTurnId={currentActiveTurn?.id || null}

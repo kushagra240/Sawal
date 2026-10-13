@@ -39,6 +39,11 @@
 }
 
 /* Light theme only: Ruled-paper texture with warm tone */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   background-color: var(--paper);
   color: var(--ink);

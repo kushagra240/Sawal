@@ -296,20 +296,20 @@ export function ChatColumn({
                   ) : (
                     /* Completed Result Card (if completed or act) */
                     session.result && (
-                      <div className="flex items-start gap-2.5">
+                      <div className="flex items-start gap-2.5 min-w-0 max-w-full">
                         <div className="w-7 h-7 rounded-full bg-[#19583D] text-surface flex items-center justify-center font-mono text-xs font-bold shrink-0">
                           ✓
                         </div>
-                        <div className="flex-1 bg-surface border border-[#DDD0BA] rounded-[12px] rounded-tl-[4px] p-4 shadow-sawal-sm space-y-3">
+                        <div className="flex-1 min-w-0 max-w-full bg-surface border border-[#DDD0BA] rounded-[12px] rounded-tl-[4px] p-4 shadow-sawal-sm space-y-3">
                           {/* Header with Title and Stamp */}
                           <div className="flex items-start justify-between gap-2 border-b border-[#DDD0BA] pb-2.5">
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <span className="text-[10px] font-mono uppercase tracking-wider text-[#6E6253] block">
                                 {session.decision?.action === "act" && !session._chosenGroupId
                                   ? "AUTONOMOUS ACT"
                                   : "COMMITTED ACTION"}
                               </span>
-                              <h4 className="font-serif font-bold text-base text-[#231B12]">
+                              <h4 className="font-serif font-bold text-base text-[#231B12] truncate">
                                 {session.decision?.action === "act" && !session._chosenGroupId
                                   ? "Acting Autonomously"
                                   : "Execution Completed"}
@@ -351,7 +351,7 @@ export function ChatColumn({
                               {session.result.world_diff.map((diff, dIdx) => (
                                 <div
                                   key={dIdx}
-                                  className="flex items-center justify-between gap-2 p-2 rounded-[6px] bg-[#F4EBDD]/60 border border-[#DDD0BA] text-xs"
+                                  className="flex items-center justify-between gap-2 p-2 rounded-[6px] bg-[#F4EBDD]/60 border border-[#DDD0BA] text-xs min-w-0 max-w-full"
                                 >
                                   <div className="min-w-0 flex-1 truncate text-[#231B12] font-sans">
                                     <span className="font-mono text-[10px] text-[#6E6253] mr-1">
@@ -359,10 +359,12 @@ export function ChatColumn({
                                     </span>
                                     <span>{diff.summary}</span>
                                   </div>
-                                  <ReversibilityBadge
-                                    reversibility={diff.reversibility as Reversibility}
-                                    size="sm"
-                                  />
+                                  <div className="shrink-0">
+                                    <ReversibilityBadge
+                                      reversibility={diff.reversibility as Reversibility}
+                                      size="sm"
+                                    />
+                                  </div>
                                 </div>
                               ))}
                             </div>
