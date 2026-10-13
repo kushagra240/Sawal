@@ -1,26 +1,102 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #FBF8F3;
+  --surface: #FFFFFF;
+  --sunken: #F4EFE7;
+  --ink: #1C1B19;
+  --ink-muted: #6B665E;
+  --hairline: #E8E2D8;
+  --accent: #17494D;
+  --accent-hover: #0F3639;
+  --accent-soft: #E6EFEE;
+
+  /* Reversibility tokens */
+  --rev-readonly-text: #1F6B4A;
+  --rev-readonly-bg: #E7F3EC;
+  --rev-undo-text: #8A5A0B;
+  --rev-undo-bg: #FBF1DC;
+  --rev-cant-text: #A33A2B;
+  --rev-cant-bg: #FBE9E5;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-hairline: var(--hairline);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+
+  --font-serif: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-instrument-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: var(--font-jetbrains-mono), Menlo, Monaco, Consolas, monospace;
+  --font-devanagari: var(--font-noto-serif-devanagari), var(--font-serif);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Light theme only: Ruled-paper texture */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #FBF8F3;
+  color: #1C1B19;
+  font-family: var(--font-instrument-sans), sans-serif;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 23px,
+    rgba(28, 27, 25, 0.035) 24px
+  );
+  background-size: 100% 24px;
+}
+
+/* Dotted grid for fork panel */
+.bg-dotted-grid {
+  background-image: radial-gradient(rgba(28, 27, 25, 0.12) 1.2px, transparent 1.2px);
+  background-size: 16px 16px;
+}
+
+/* Custom shadows matching specification */
+.shadow-sawal-sm {
+  box-shadow: 0 1px 2px rgba(28, 27, 25, 0.04);
+}
+
+.shadow-sawal-md {
+  box-shadow: 0 8px 24px rgba(28, 27, 25, 0.06);
+}
+
+/* Folded corner utility for QuestionNote */
+.folded-corner {
+  position: relative;
+}
+.folded-corner::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 16px 16px 0;
+  border-color: transparent #E8E2D8 transparent transparent;
+  pointer-events: none;
+}
+
+/* Presenter mode magnification */
+.presenter-mode {
+  font-size: 1.2rem;
+}
+.presenter-mode .hide-in-presenter {
+  display: none !important;
+}
+
+/* Accessibility: Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
