@@ -16,9 +16,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, model_validator
 
+from core.config import load_environment
 from core.engine import MAX_QUESTIONS, TAU, answer_session, create_session
 from core.llm import ensure_open_weight_model
 from core.world import seed_world
+
+load_environment()
 
 
 @asynccontextmanager
