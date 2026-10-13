@@ -33,14 +33,14 @@ All actions affect only the seeded mock world. This P0 has guest demo mode and i
 
 On Windows PowerShell:
 
-{fence}powershell
+```powershell
 $env:SAWAL_LLM_MODE="live"
 $env:SAWAL_MODEL="gemma4:e2b"
 $env:OPENAI_BASE_URL="http://localhost:11434/v1"
 $env:SAWAL_LLM_TIMEOUT="90"
 
 .\.venv\Scripts\python.exe -m uvicorn api.main:app --reload --port 8001
-{fence}
+```
 
 For an ambiguous request such as "Send an email to Priya confirming the lab slot.", Sawal rehearses candidate plans first.
 
