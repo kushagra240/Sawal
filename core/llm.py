@@ -13,7 +13,41 @@ import time
 import urllib.error
 import urllib.request
 
+from .config import load_environment
 from .tools import validate_call
+
+load_environment()
+
+
+def _sanitize_message(msg: object) -> str:
+    """Strip API keys and sensitive query params from messages and URLs."""
+    text = str(msg)
+    text = re.sub(r"AIza[0-9A-Za-z-_]{35}", "[REDACTED_API_KEY]", text)
+    text = re.sub(r"([?&]key=)[^&\s'\"]+", r"\1[REDACTED_KEY]", text)
+    text = re.sub(r"(Bearer\s+)[A-Za-z0-9-_.]+", r"\1[REDACTED_TOKEN]", text)
+    return text
+
+
+def classify_failure_reason(reason: str | None, has_credentials: bool) -> str:
+    """Categorize failure into a standard diagnostic classification."""
+    if not reason:
+        return "UNKNOWN_FALLBACK"
+    r = reason.lower()
+    if "not set" in r or "missing" in r or not has_credentials:
+        return "MISSING_CREDENTIALS"
+    if any(k in r for k in ["401", "403", "unauthorized", "forbidden", "api_key_invalid"]):
+        return "HTTP_AUTH_ERROR"
+    if any(k in r for k in ["404", "not found", "not supported", "is not in sawal"]):
+        return "MODEL_NOT_FOUND_OR_UNSUPPORTED"
+    if any(k in r for k in ["429", "quota", "rate limit", "resource_exhausted"]):
+        return "RATE_LIMIT_EXCEEDED"
+    if any(k in r for k in ["timeout", "timed out"]):
+        return "TIMEOUT_ERROR"
+    if any(k in r for k in ["connection", "urlerror", "errno", "name or service not known"]):
+        return "NETWORK_ERROR"
+    if any(k in r for k in ["json", "candidate", "no valid plans"]):
+        return "INVALID_MODEL_OUTPUT"
+    return "API_ERROR"
 
 
 OPEN_MODEL_PREFIXES = (
@@ -299,14 +333,14 @@ def _parse_gemini_candidate(raw: dict) -> str:
 
 
 def _gemini_call(model: str, prompt: str) -> str:
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
 
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set.")
 
     endpoint = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{model}:generateContent?key={api_key}"
+        f"{model}:generateContent"
     )
 
     payload = {
@@ -324,7 +358,10 @@ def _gemini_call(model: str, prompt: str) -> str:
     return _http_json_call(
         endpoint=endpoint,
         payload=payload,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key,
+        },
         response_parser=_parse_gemini_candidate,
     )
 
@@ -346,7 +383,7 @@ def _openai_compatible_call(model: str, prompt: str) -> str:
         "http://localhost:11434/v1",
     ).rstrip("/")
 
-    api_key = os.getenv("OPENAI_API_KEY", "")
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
 
     payload = {
         "model": model,
@@ -380,8 +417,8 @@ def _http_json_call(
     headers: dict,
     response_parser,
 ) -> str:
-    timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
-    retries = max(0, int(os.getenv("LLM_MAX_RETRIES", "3")))
+    timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "15"))
+    retries = max(0, int(os.getenv("LLM_MAX_RETRIES", "1")))
 
     last_error: Exception | None = None
 
@@ -411,13 +448,17 @@ def _http_json_call(
                 body = ""
 
                 try:
-                    body = exc.read().decode("utf-8")[:500]
+                    raw_body = exc.read().decode("utf-8", errors="replace")[:400]
+                    try:
+                        err_json = json.loads(raw_body)
+                        body = err_json.get("error", {}).get("message", raw_body)[:200]
+                    except Exception:
+                        body = raw_body[:200]
                 except Exception:
                     pass
 
-                raise RuntimeError(
-                    f"LLM HTTP {exc.code}: {body}"
-                ) from exc
+                clean_msg = _sanitize_message(f"HTTP {exc.code}: {body}")
+                raise RuntimeError(clean_msg) from exc
 
         except (
             urllib.error.URLError,
@@ -427,13 +468,19 @@ def _http_json_call(
             ValueError,
             TypeError,
         ) as exc:
-            last_error = exc
+            if isinstance(exc, TimeoutError) or "timed out" in str(exc).lower():
+                last_error = RuntimeError(f"Request timed out after {timeout:.0f}s")
+            elif isinstance(exc, urllib.error.URLError) and ("timed out" in str(getattr(exc, "reason", "")).lower() or isinstance(getattr(exc, "reason", None), TimeoutError)):
+                last_error = RuntimeError(f"Request timed out after {timeout:.0f}s")
+            else:
+                last_error = RuntimeError(_sanitize_message(str(exc)))
 
         if attempt < retries:
-            time.sleep(min(2 ** attempt, 8))
+            time.sleep(min(2 ** attempt, 4))
 
+    clean_err = _sanitize_message(str(last_error))
     raise RuntimeError(
-        f"LLM request failed after retries: {last_error}"
+        f"LLM request failed: {clean_err}"
     )
 
 
@@ -466,6 +513,12 @@ def propose_with_meta(
         plans: list[dict] | None,
         reason: str | None = None,
     ) -> dict:
+        has_key = bool(
+            os.getenv("GEMINI_API_KEY", "").strip()
+            if provider == "gemini"
+            else os.getenv("OPENAI_API_KEY", "").strip()
+        )
+        clean_reason = _sanitize_message(reason) if reason else None
         result = {
             "kind": kind,
             "model": model,
@@ -475,8 +528,9 @@ def propose_with_meta(
             ),
         }
 
-        if reason:
-            result["fallback_reason"] = reason
+        if clean_reason:
+            result["fallback_reason"] = clean_reason
+            result["error_category"] = classify_failure_reason(clean_reason, has_key)
 
         return result
 
