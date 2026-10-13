@@ -6,6 +6,12 @@ Sawal turns a natural-language request into several plausible interpretations, r
 
 The central rule is simple: **reason broadly, preview precisely, and never claim a real-world action succeeded without provider evidence.**
 
+## Live prototype
+
+Try the working deployment: **[Open Sawal on Railway](https://sawal-web-production.up.railway.app/)**
+
+The hosted prototype uses the deployed Railway frontend and API. Free instances can take a short time to wake after inactivity.
+
 ## Highlights
 
 - Ask-or-act policy driven by expected regret instead of a fixed confidence threshold.
