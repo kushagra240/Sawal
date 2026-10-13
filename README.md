@@ -251,6 +251,23 @@ npm --prefix web install
 npm --prefix web run dev
 ```
 
+## Deploy to Render
+
+The repository includes a two-service [Render Blueprint](render.yaml):
+
+- `sawal-tarunkkumarsahu-api`: FastAPI backend with `/v1/health` health checks.
+- `sawal-tarunkkumarsahu-web`: Next.js web service that proxies `/api` to the backend.
+
+Open the [Render Blueprint installer](https://dashboard.render.com/blueprint/new?repo=https://github.com/kushagra240/Sawal), select the branch containing `render.yaml`, and provide the secret variables requested by Render. At minimum, set `GEMINI_API_KEY` for hosted Gemma. Google live tools additionally require `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+
+For Gmail OAuth on Render, register this production redirect URI in Google Cloud:
+
+```text
+https://sawal-tarunkkumarsahu-api.onrender.com/v1/oauth/google/callback
+```
+
+Free Render instances use an ephemeral filesystem. The default Render configuration therefore preserves SQLite state only until the service is restarted or redeployed. Use a persistent disk or a managed database before relying on OAuth connections, audit history, or expenses in production.
+
 ## Execution modes
 
 Sawal has two independent mode choices:
