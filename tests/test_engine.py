@@ -12,6 +12,11 @@ class EngineTests(unittest.TestCase):
         session = create_session("Send an email to Priya confirming the lab slot.", world)
         self.assertEqual(session["status"], "asked")
         self.assertEqual(len(session["question"]["options"]), 2)
+        self.assertEqual(session["question"]["slot_name"], "contact_id")
+        self.assertEqual(
+            {option["value"] for option in session["question"]["options"]},
+            {"priya-sharma", "priya-kulkarni"},
+        )
         self.assertEqual(world["emails"], [])
         option = next(x for x in session["question"]["options"] if x["value"] == "priya-sharma")
         answer_session(session, world, session["question"]["id"], option["id"], None)
