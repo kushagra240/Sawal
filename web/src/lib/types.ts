@@ -49,7 +49,7 @@ export interface QuestionOption {
   label: string;
   value?: string;
   target_group_ids?: string[];
-  matched?: boolean;
+  matched?: number | boolean;
   description?: string;
   meta?: string[];
 }

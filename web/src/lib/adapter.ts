@@ -107,9 +107,10 @@ export function normalizeEffect(rawEff: Record<string, unknown> | null | undefin
 export function normalizeWorldDiff(rawDiff: unknown): WorldDiffItem[] {
   if (!rawDiff) return [];
   if (Array.isArray(rawDiff)) {
-    return rawDiff.map((d) => {
+    return rawDiff.map((d, idx) => {
       const rec = (d && typeof d === "object" ? d : {}) as Record<string, unknown>;
       return {
+        id: String(rec.id || `diff-${idx}`),
         entity: String(rec.entity || "entity"),
         op: String(rec.op || "change"),
         summary: String(rec.summary || ""),
@@ -157,6 +158,7 @@ export function normalizeWorldDiff(rawDiff: unknown): WorldDiffItem[] {
         }
 
         rows.push({
+          id: `${opKey}-${entityName}-${rows.length}`,
           entity: entityName,
           op: opKey === "added" ? "create" : opKey === "deleted" ? "delete" : "update",
           summary,
@@ -188,8 +190,10 @@ export function normalizeResult(rawResult: unknown): ExecutionResult | null {
   const world_diff = normalizeWorldDiff(resObj.world_diff);
 
   return {
+    success: typeof resObj.success === "boolean" ? resObj.success : true,
     executed_tools,
     world_diff,
+    message: typeof resObj.message === "string" ? resObj.message : "Execution completed",
   };
 }
 
@@ -322,7 +326,7 @@ export function normalizeSession(raw: unknown): Session {
       id: String(grp.id),
       size,
       effects: rawEffects.map(normalizeEffect),
-      label: typeof grp.label === "string" ? grp.label : undefined,
+      label: typeof grp.label === "string" ? grp.label : `Outcome ${grp.id || ""}`.trim() || "Outcome",
     };
   });
 
@@ -391,6 +395,7 @@ export function normalizeSession(raw: unknown): Session {
       id: gid.startsWith("grp-") ? gid : `grp-${i + 1}`,
       size: val.size,
       effects: val.effects,
+      label: `Outcome ${i + 1}`,
     }));
   }
 
