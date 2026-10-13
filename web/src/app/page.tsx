@@ -5,8 +5,6 @@ import Link from "next/link";
 import {
   AlertTriangle,
   BarChart3,
-  CheckCircle2,
-  HelpCircle,
   RotateCcw,
   Shield,
   Sparkles,
@@ -37,10 +35,9 @@ export default function HomePage() {
       if (result.status === "failed" && result.error) {
         setErrorMessage(result.error.message);
       }
-    } catch (err: any) {
-      setErrorMessage(
-        err?.message || "Failed to execute rehearsal session. Please check backend connection."
-      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to execute rehearsal session. Please check backend connection.";
+      setErrorMessage(msg);
     } finally {
       setIsLoading(false);
     }
@@ -56,8 +53,9 @@ export default function HomePage() {
     try {
       const updated = await answerSession(session.session_id, answer);
       setSession(updated);
-    } catch (err: any) {
-      setErrorMessage(err?.message || "Failed to submit disambiguation answer.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to submit disambiguation answer.";
+      setErrorMessage(msg);
     } finally {
       setIsAnswering(false);
     }

@@ -23,26 +23,36 @@ function BenchmarkContent() {
   const [isSample, setIsSample] = useState(false);
   const [sourceType, setSourceType] = useState<"live" | "file" | "sample" | "none">("none");
   const [isLoading, setIsLoading] = useState(true);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetchBenchmarkData(sampleParam);
-      setBenchmarkData(res.summary);
-      setIsSample(res.isSample);
-      setSourceType(res.source);
-    } catch {
-      setBenchmarkData(null);
-      setIsSample(false);
-      setSourceType("none");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    loadData();
-  }, [sampleParam]);
+    let isCancelled = false;
+
+    fetchBenchmarkData(sampleParam)
+      .then((res) => {
+        if (!isCancelled) {
+          setBenchmarkData(res.summary);
+          setIsSample(res.isSample);
+          setSourceType(res.source);
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          setBenchmarkData(null);
+          setIsSample(false);
+          setSourceType("none");
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [sampleParam, refreshKey]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
@@ -73,7 +83,10 @@ function BenchmarkContent() {
           )}
           <button
             type="button"
-            onClick={loadData}
+            onClick={() => {
+              setIsLoading(true);
+              setRefreshKey((k) => k + 1);
+            }}
             disabled={isLoading}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs sm:text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors cursor-pointer"
           >

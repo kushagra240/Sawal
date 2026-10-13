@@ -148,10 +148,11 @@ export function BenchmarkChart({ data }: BenchmarkChartProps) {
                 data={policyPoints}
                 name="Evaluated Policies"
                 fill="#6366f1"
-                shape={(props: any) => {
+                shape={(props: { cx?: number; cy?: number; payload?: unknown }) => {
                   const { cx, cy, payload } = props;
+                  const pointData = payload as { policyKey?: PolicyName } | undefined;
                   const color =
-                    POLICY_COLORS[payload.policyKey as PolicyName] || "#6366f1";
+                    (pointData?.policyKey && POLICY_COLORS[pointData.policyKey]) || "#6366f1";
                   return (
                     <circle
                       cx={cx}
