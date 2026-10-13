@@ -1,1 +1,1 @@
-"""Deterministic Sawal decision engine and sandbox tools."""
+"""Sawal core package."""

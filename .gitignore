@@ -1,9 +1,7 @@
 # Environment & Secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 *.pem
 *.key
 
@@ -64,5 +62,5 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Replay cache generated at runtime (keep committed benchmarks intact)
+# Runtime-only cache; benchmark/replay_cache is intentionally committable evidence.
 benchmark/results/runtime_cache/

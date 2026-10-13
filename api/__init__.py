@@ -1,1 +1,1 @@
-"""FastAPI application package."""
+"""Sawal API package."""

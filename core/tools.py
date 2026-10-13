@@ -29,6 +29,12 @@ REQUIRED_ARGS = {
 }
 
 
+def effect_reversibility(weight: float | None) -> str:
+    if weight is None:
+        return "readonly"
+    return "irreversible" if weight >= 0.7 else "reversible"
+
+
 def validate_call(call: dict) -> None:
     if not isinstance(call, dict) or not {"tool", "args"} <= set(call):
         raise ValueError("Each tool call must contain `tool` and `args`.")
@@ -87,4 +93,11 @@ def run_tool(world: dict, call: dict) -> tuple[dict, list[dict]]:
 
 
 def _effect(entity_type: str, operation: str, key_fields: dict, tool: str) -> dict:
-    return {"entity_type": entity_type, "operation": operation, "key_fields": key_fields, "reversibility_weight": TOOL_WEIGHTS[tool]}
+    weight = TOOL_WEIGHTS[tool]
+    return {
+        "entity_type": entity_type,
+        "operation": operation,
+        "key_fields": key_fields,
+        "reversibility_weight": weight,
+        "reversibility": effect_reversibility(weight),
+    }

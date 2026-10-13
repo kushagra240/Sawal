@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from threading import Lock
 import time
+from typing import Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response
@@ -23,6 +24,8 @@ from core.world import seed_world
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Validate only the model family at startup. Provider credentials are checked
+    # lazily when a live call is actually requested, keeping offline tests/network-free.
     ensure_open_weight_model()
     yield
 
@@ -87,6 +90,7 @@ async def validation_error_response(request: Request, exc: RequestValidationErro
 
 class CreateSessionRequest(BaseModel):
     request_text: str = Field(min_length=3, max_length=1000)
+    llm_mode: Literal["live", "record", "replay", "auto"] | None = None
 
 
 class AnswerRequest(BaseModel):
@@ -127,7 +131,6 @@ def _public(session: dict) -> dict:
     return {key: value for key, value in session.items() if not key.startswith("_")}
 
 
-# Router definitions
 router = APIRouter()
 
 
@@ -141,6 +144,7 @@ def health():
         "version": app.version,
         "storage_backend": "memory",
         "llm_mode": mode,
+        "llm_provider": os.getenv("LLM_PROVIDER", "gemini"),
     }
 
 
@@ -154,8 +158,9 @@ def config():
         "decision_tau": TAU,
         "max_questions": MAX_QUESTIONS,
         "num_interpretations": int(os.getenv("NUM_INTERPRETATIONS", "5")),
-        "gemma_model_id": os.getenv("GEMMA_MODEL_ID", os.getenv("SAWAL_MODEL", "gemma-4-26b-a4b-it")),
+        "gemma_model_id": ensure_open_weight_model(),
         "llm_mode": mode,
+        "llm_provider": os.getenv("LLM_PROVIDER", "gemini"),
         "reversibility_weights": {
             "email.send": 1.0,
             "restaurants.book": 0.7,
@@ -191,7 +196,7 @@ def update_preferences(req: UpdatePreferencesRequest):
 @router.post("/sessions", status_code=201)
 def create(request_body: CreateSessionRequest, request: Request, response: Response):
     _rate_limit(request)
-    session = create_session(request_body.request_text, world)
+    session = create_session(request_body.request_text, world, llm_mode=request_body.llm_mode)
     sessions[session["id"]] = session
     return _public(session)
 
@@ -264,7 +269,7 @@ def create_benchmark_run(req: CreateBenchmarkRunRequest | None = None):
         "status": "completed",
         "config": {
             "tau_values": (req.tau_values if req and req.tau_values else [0.0, 0.1, 0.25, 0.5, 0.75, 1.0]),
-            "models": (req.models if req and req.models else ["gemma-4-26b-a4b-it"]),
+            "models": (req.models if req and req.models else [ensure_open_weight_model()]),
             "tasks_count": summary["tasks_count"],
         },
         "summary": summary,
@@ -283,6 +288,5 @@ def get_benchmark_run(run_id: str):
     return run_obj
 
 
-# Mount routes at both /v1 prefix and root prefix
 app.include_router(router, prefix="/v1")
 app.include_router(router)

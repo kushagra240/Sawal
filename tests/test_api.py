@@ -1,15 +1,17 @@
+import os
 import pytest
 from fastapi.testclient import TestClient
-from api.main import app, sessions, world
+from api.main import app, sessions
 from core.world import seed_world
 
 
 @pytest.fixture(autouse=True)
-def reset_state():
-    global world, sessions
+def reset_state(monkeypatch):
     sessions.clear()
     from api import main
     main.world = seed_world()
+    monkeypatch.setenv("SAWAL_LLM_MODE", "mock")
+    monkeypatch.delenv("SAWAL_STRICT", raising=False)
 
 
 @pytest.fixture
@@ -65,10 +67,28 @@ def test_create_session_act_and_get(client):
     assert session["status"] == "completed"
     assert session["decision"]["action"] == "act"
     assert session["result"]["success"] is True
+    assert "proposer" in session
+    assert "groups" in session
 
     get_res = client.get(f"/v1/sessions/{session_id}")
     assert get_res.status_code == 200
     assert get_res.json()["id"] == session_id
+
+
+def test_create_session_accepts_optional_llm_mode(client):
+    res = client.post(
+        "/v1/sessions",
+        json={"request_text": "Find vegetarian restaurants.", "llm_mode": "replay"},
+    )
+    assert res.status_code == 201
+    data = res.json()
+    assert data["proposer"]["kind"] == "deterministic_fallback"
+    assert "fallback_reason" in data["proposer"]
+
+
+def test_create_session_rejects_invalid_llm_mode(client):
+    res = client.post("/v1/sessions", json={"request_text": "Find vegetarian restaurants.", "llm_mode": "mock"})
+    assert res.status_code == 422
 
 
 def test_create_session_ask_and_answer(client):
@@ -112,12 +132,10 @@ def test_world_state_and_reset(client):
     assert "calendar_events" in world_state
     assert "restaurants" in world_state
 
-    # Mutate through an action
     client.post("/v1/sessions", json={"request_text": "Log 50 rupees for snacks."})
     res_after = client.get("/v1/world")
     assert len(res_after.json()["expenses"]) >= 1
 
-    # Reset world
     reset_res = client.post("/v1/world/reset")
     assert reset_res.status_code == 200
     assert reset_res.json()["expenses"] == []
@@ -150,7 +168,7 @@ def test_not_found_session(client):
 
 
 def test_validation_error(client):
-    res = client.post("/v1/sessions", json={"request_text": "hi"})  # min_length 3
+    res = client.post("/v1/sessions", json={"request_text": "hi"})
     assert res.status_code == 422
     err = res.json()
     assert err["code"] == "UNPROCESSABLE_ENTITY"

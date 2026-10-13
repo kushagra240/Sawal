@@ -10,7 +10,7 @@ import re
 from uuid import uuid4
 
 from . import llm
-from .tools import TOOL_NAMES, TOOL_WEIGHTS, run_tool, validate_call
+from .tools import TOOL_NAMES, TOOL_WEIGHTS, effect_reversibility, run_tool, validate_call
 from .world import clone_world
 
 TAU = float(os.getenv("SAWAL_DECISION_TAU", os.getenv("DECISION_TAU", "0.25")))
@@ -18,12 +18,77 @@ MAX_QUESTIONS = int(os.getenv("SAWAL_MAX_QUESTIONS", os.getenv("MAX_QUESTIONS", 
 K = int(os.getenv("NUM_INTERPRETATIONS", "5"))
 
 
-def create_session(request_text: str, world: dict, tau: float | None = None) -> dict:
+def create_session(
+    request_text: str,
+    world: dict,
+    tau: float | None = None,
+    llm_mode: str | None = None,
+) -> dict:
+    interpretations, proposer = propose_interpretations(request_text, world, llm_mode=llm_mode)
+    return create_session_from_proposals(request_text, world, interpretations, proposer, tau=tau)
+
+
+def propose_interpretations(
+    request_text: str,
+    world: dict,
+    llm_mode: str | None = None,
+) -> tuple[list[dict], dict]:
+    outcome = llm.propose_with_meta(request_text, world, K, mode=llm_mode)
+    proposed = outcome.interpretations or []
+    proposer = deepcopy(outcome.proposer)
+
+    if proposed:
+        proposed = _enforce_contact_ambiguity(request_text, world, proposed)
+        interpretations = _validate_interpretations(proposed)
+        if interpretations:
+            proposer["valid_plans"] = len(interpretations)
+            return interpretations, proposer
+        prior_reason = proposer.get("fallback_reason")
+        reason = "LLM/replay output contained no allowlisted valid plans"
+        if prior_reason:
+            reason = f"{prior_reason}; {reason}"
+        proposer = {
+            "kind": "deterministic_fallback",
+            "model": proposer.get("model"),
+            "valid_plans": 0,
+            "latency_ms": proposer.get("latency_ms", 0.0),
+            "fallback_reason": reason,
+        }
+
+    if os.getenv("SAWAL_STRICT", "0").strip().lower() in {"1", "true", "yes", "on"}:
+        raise RuntimeError(
+            "SAWAL_STRICT=1 refused deterministic fallback: "
+            + str(proposer.get("fallback_reason") or "no model/replay proposals available")
+        )
+
+    fallback = _validate_interpretations(_heuristic_proposals(request_text, world))
+    proposer["kind"] = "deterministic_fallback"
+    proposer["valid_plans"] = len(fallback)
+    proposer.setdefault("fallback_reason", "no model/replay proposals available")
+    return fallback, proposer
+
+
+def create_session_from_proposals(
+    request_text: str,
+    world: dict,
+    interpretations: list[dict],
+    proposer: dict,
+    tau: float | None = None,
+) -> dict:
     decision_tau = TAU if tau is None else float(tau)
     trace = []
-    proposed = _propose(request_text, world)
-    interpretations = _validate_interpretations(proposed)
-    trace.append(_trace("INTERPRETATIONS_GENERATED", {"count": len(proposed), "valid_count": len(interpretations)}))
+    interpretations = deepcopy(interpretations)
+    proposer = deepcopy(proposer)
+    proposer["valid_plans"] = len(interpretations)
+
+    trace.append(_trace("INTERPRETATIONS_GENERATED", {"count": len(interpretations), "valid_count": len(interpretations)}))
+    if proposer.get("fallback_reason"):
+        trace.append(_trace("PROPOSER_FALLBACK", {
+            "kind": proposer.get("kind"),
+            "model": proposer.get("model"),
+            "reason": proposer.get("fallback_reason"),
+        }))
+
     low_diversity = len(interpretations) < 2
     rehearsals = []
     for item in interpretations:
@@ -35,6 +100,7 @@ def create_session(request_text: str, world: dict, tau: float | None = None) -> 
         signature = _signature(effects)
         item["signature"] = signature
         item["group_id"] = "grp-" + signature[:10]
+        item["reversibility"] = _group_reversibility(effects)
         rehearsals.append({"interpretation": item, "sandbox": sandbox, "effects": effects, "signature": signature})
 
     groups = _group(rehearsals)
@@ -55,6 +121,8 @@ def create_session(request_text: str, world: dict, tau: float | None = None) -> 
             "groups": groups,
         },
         "interpretations": interpretations,
+        "groups": [_public_group(group) for group in groups],
+        "proposer": proposer,
         "question": None,
         "result": None,
         "trace": trace,
@@ -144,104 +212,60 @@ def world_diff(before: dict, after: dict) -> dict:
         new_items = [new[k] for k in new.keys() - old.keys()]
         changed_items = [{"before": old[k], "after": new[k]} for k in new.keys() & old.keys() if old[k] != new[k]]
         removed_items = [old[k] for k in old.keys() - new.keys()]
-        if new_items: added[collection] = new_items
-        if changed_items: modified[collection] = changed_items
-        if removed_items: deleted[collection] = removed_items
+        if new_items:
+            added[collection] = new_items
+        if changed_items:
+            modified[collection] = changed_items
+        if removed_items:
+            deleted[collection] = removed_items
     return {"added": added, "modified": modified, "deleted": deleted}
 
 
 def _propose(request_text: str, world: dict) -> list[dict]:
-    mode = os.getenv("SAWAL_LLM_MODE", os.getenv("LLM_MODE", "mock")).lower()
-    if mode in {"live", "auto"}:
-        live = llm.propose(request_text, world, K)
-        if live:
-            live = _enforce_contact_ambiguity(request_text, world, live)
-            return live[:K]
-        if mode == "live":
-            # Safe local fallback keeps the demo usable if Gemma/Ollama is unavailable.
-            pass
-    return _heuristic_proposals(request_text, world)
+    """Backward-compatible internal helper returning interpretations only."""
+    interpretations, _ = propose_interpretations(request_text, world)
+    return interpretations
 
 
 def _enforce_contact_ambiguity(request_text: str, world: dict, items: list[dict]) -> list[dict]:
-    """
-    Ground ambiguous person names against the mock-world contacts.
-
-    Example:
-        "Send an email to Priya..."
-    where the world contains multiple Priyas must produce candidate
-    plans for each matching contact instead of trusting arbitrary
-    model slot names.
-    """
     lower = request_text.casefold()
-
     matching_contacts = []
     for contact in world.get("contacts", []):
         first_name = str(contact.get("name", "")).split()[0].casefold()
         if first_name and re.search(rf"\b{re.escape(first_name)}\b", lower):
             matching_contacts.append(contact)
-
     if len(matching_contacts) < 2:
         return items
 
-    # Only intervene when the task actually contains an email action.
     base = None
     for item in items:
         if not isinstance(item, dict):
             continue
         plan = item.get("plan", [])
-        if any(
-            isinstance(call, dict)
-            and call.get("tool") in {"email.send", "email.draft"}
-            for call in plan
-        ):
+        if any(isinstance(call, dict) and call.get("tool") in {"email.send", "email.draft"} for call in plan):
             base = item
             break
-
     if base is None:
         return items
 
     grounded = []
-
-    # 3:2 distribution for two contacts keeps K=5 while preserving uncertainty.
-    distribution = []
-    for index in range(K):
-        distribution.append(matching_contacts[index % len(matching_contacts)])
-
+    distribution = [matching_contacts[index % len(matching_contacts)] for index in range(K)]
     if len(matching_contacts) == 2 and K == 5:
-        distribution = [
-            matching_contacts[0],
-            matching_contacts[0],
-            matching_contacts[0],
-            matching_contacts[1],
-            matching_contacts[1],
-        ]
+        distribution = [matching_contacts[0], matching_contacts[0], matching_contacts[0], matching_contacts[1], matching_contacts[1]]
 
     for index, contact in enumerate(distribution):
         candidate = deepcopy(base)
         candidate["id"] = f"interp-{index + 1:02d}"
-
-        # Remove unreliable model-created ambiguity slots.
         original_slots = candidate.get("slots", {})
         allowed = {"restaurant_id", "date_time", "party_size", "subject", "body"}
-        clean_slots = {
-            key: value
-            for key, value in original_slots.items()
-            if key in allowed
-        }
+        clean_slots = {key: value for key, value in original_slots.items() if key in allowed}
         clean_slots["contact_id"] = contact["id"]
         candidate["slots"] = clean_slots
-
         for call in candidate.get("plan", []):
             if call.get("tool") in {"email.send", "email.draft"}:
                 call.setdefault("args", {})["to"] = contact["email"]
-
-        candidate["rationale"] = (
-            f"Interprets the ambiguous recipient as {contact['name']}."
-        )
-
+        candidate["rationale"] = f"Interprets the ambiguous recipient as {contact['name']}."
         grounded.append(candidate)
-
     return grounded
 
 
@@ -284,7 +308,8 @@ def _heuristic_proposals(text: str, world: dict) -> list[dict]:
         else:
             options = [next((r for r in restaurants if r["name"].casefold() in lower), restaurants[0])]
         plans = [{"slots": {"restaurant_id": r["id"]}, "rationale": f"Interprets the venue as {r['name']}.", "plan": [{"tool": "restaurants.book", "args": {"restaurant_id": r["id"], "date_time": _extract_datetime(text), "party_size": _extract_party_size(text)}}]} for r in options]
-        if len(plans) == 1: return _five(plans)
+        if len(plans) == 1:
+            return _five(plans)
         return _five([plans[0], plans[0], plans[0], plans[1], plans[1]])
 
     if any(word in lower for word in ("calendar", "schedule", "events", "event")) and any(word in lower for word in ("check", "show", "find", "list", "look")):
@@ -296,7 +321,8 @@ def _heuristic_proposals(text: str, world: dict) -> list[dict]:
 
 
 def _five(plans: list[dict]) -> list[dict]:
-    if not plans: return []
+    if not plans:
+        return []
     return [{"id": f"interp-{i + 1:02d}", **deepcopy(plans[i % len(plans)])} for i in range(K)]
 
 
@@ -306,32 +332,67 @@ def _validate_interpretations(items: list) -> list[dict]:
         if not isinstance(item, dict) or not isinstance(item.get("plan"), list) or not item["plan"]:
             continue
         try:
-            for call in item["plan"]: validate_call(call)
+            for call in item["plan"]:
+                validate_call(call)
         except (ValueError, TypeError, KeyError):
             continue
-        valid.append({"id": str(item.get("id") or f"interp-{index + 1:02d}"), "rationale": str(item.get("rationale", "Model-proposed interpretation.")), "slots": item.get("slots", {}) if isinstance(item.get("slots", {}), dict) else {}, "plan": item["plan"]})
+        valid.append({
+            "id": str(item.get("id") or f"interp-{index + 1:02d}"),
+            "rationale": str(item.get("rationale", "Model-proposed interpretation.")),
+            "slots": item.get("slots", {}) if isinstance(item.get("slots", {}), dict) else {},
+            "plan": item["plan"],
+        })
     return valid
 
 
 def _group(rehearsals: list[dict]) -> list[dict]:
     buckets = defaultdict(list)
-    for run in rehearsals: buckets[run["signature"]].append(run)
+    for run in rehearsals:
+        buckets[run["signature"]].append(run)
     total = max(1, len(rehearsals))
     result = []
     for sig, runs in buckets.items():
-        result.append({"id": "grp-" + sig[:10], "mass": len(runs) / total, "interpretation_ids": [r["interpretation"]["id"] for r in runs], "canonical_effects": runs[0]["effects"], "signature": sig})
+        effects = runs[0]["effects"]
+        result.append({
+            "id": "grp-" + sig[:10],
+            "mass": len(runs) / total,
+            "size": len(runs),
+            "interpretation_ids": [r["interpretation"]["id"] for r in runs],
+            "canonical_effects": effects,
+            "signature": sig,
+            "reversibility": _group_reversibility(effects),
+        })
     return result
 
 
+def _public_group(group: dict) -> dict:
+    return {
+        "id": group["id"],
+        "size": group.get("size", len(group.get("interpretation_ids", []))),
+        "effects": deepcopy(group.get("canonical_effects", [])),
+        "reversibility": group.get("reversibility", _group_reversibility(group.get("canonical_effects", []))),
+    }
+
+
+def _group_reversibility(effects: list[dict]) -> str:
+    if not effects:
+        return "readonly"
+    if any(effect.get("reversibility_weight", 0.0) >= 0.7 for effect in effects):
+        return "irreversible"
+    return "reversible"
+
+
 def _best_group(groups: list[dict]) -> tuple[dict | None, float]:
-    if not groups: return None, 1.0
+    if not groups:
+        return None, 1.0
     scored = [(sum(other["mass"] * _effect_distance(group["canonical_effects"], other["canonical_effects"]) for other in groups), group) for group in groups]
     regret, group = min(scored, key=lambda pair: (pair[0], -pair[1]["mass"]))
     return group, min(1.0, regret)
 
 
 def _effect_distance(left: list[dict], right: list[dict]) -> float:
-    def key(effect): return (effect["entity_type"], effect["operation"])
+    def key(effect):
+        return (effect["entity_type"], effect["operation"])
     remaining = list(right)
     cost = 0.0
     for effect in left:
@@ -356,48 +417,24 @@ def _make_question(rehearsals: list[dict], groups: list[dict]) -> dict | None:
     group_for_interp = {r["interpretation"]["id"]: r["interpretation"]["group_id"] for r in rehearsals}
     for run in rehearsals:
         interpretation = run["interpretation"]
-
-        allowed_question_slots = {
-            "contact_id",
-            "restaurant_id",
-            "date_time",
-            "party_size",
-            "subject",
-            "body",
-        }
-
+        allowed_question_slots = {"contact_id", "restaurant_id", "date_time", "party_size", "subject", "body"}
         for key, val in interpretation["slots"].items():
             if key not in allowed_question_slots:
                 continue
             if val is not None:
                 values[key][str(val)].append(interpretation["id"])
 
-        # Do not rely only on model-generated slot names.
-        # Derive the recipient contact directly from executable email plans.
         for call in interpretation.get("plan", []):
             if call.get("tool") not in {"email.send", "email.draft"}:
                 continue
-
             recipient = str(call.get("args", {}).get("to", "")).casefold()
-            contact = next(
-                (
-                    item for item in run["sandbox"].get("contacts", [])
-                    if str(item.get("email", "")).casefold() == recipient
-                ),
-                None,
-            )
-
+            contact = next((item for item in run["sandbox"].get("contacts", []) if str(item.get("email", "")).casefold() == recipient), None)
             if contact:
-                values["contact_id"][str(contact["id"])].append(
-                    interpretation["id"]
-                )
+                values["contact_id"][str(contact["id"])].append(interpretation["id"])
 
-    differing = [
-        (slot, options)
-        for slot, options in values.items()
-        if len(options) > 1
-    ]
-    if not differing: return None
+    differing = [(slot, options) for slot, options in values.items() if len(options) > 1]
+    if not differing:
+        return None
     slot_priority = {
         "contact_id": 100,
         "restaurant_id": 90,
@@ -407,10 +444,7 @@ def _make_question(rehearsals: list[dict], groups: list[dict]) -> dict | None:
         "subject": 10,
         "body": 5,
     }
-    slot, options = max(
-        differing,
-        key=lambda item: (slot_priority.get(item[0], 30), len(item[1]))
-    )
+    slot, options = max(differing, key=lambda item: (slot_priority.get(item[0], 30), len(item[1])))
     choices = []
     world = rehearsals[0]["sandbox"] if rehearsals else {}
     collection = "contacts" if slot == "contact_id" else "restaurants" if slot == "restaurant_id" else None
@@ -418,7 +452,8 @@ def _make_question(rehearsals: list[dict], groups: list[dict]) -> dict | None:
         entity = next((x for x in world.get(collection, []) if x.get("id") == value), {}) if collection else {}
         label = entity.get("name", value)
         suffix = entity.get("relationship") or entity.get("cuisine")
-        if suffix: label += f" ({suffix})"
+        if suffix:
+            label += f" ({suffix})"
         group_ids = sorted({group_for_interp[x] for x in interp_ids})
         choices.append({"id": "opt-" + re.sub(r"[^a-z0-9-]", "-", value.casefold()), "label": label, "value": value, "target_group_ids": group_ids})
     question_text = "Which contact did you mean?" if slot == "contact_id" else "Which restaurant should I book?" if slot == "restaurant_id" else f"Which value should I use for {slot.replace('_', ' ')}?"

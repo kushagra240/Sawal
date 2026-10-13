@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from core.engine import answer_session, create_session
@@ -7,6 +8,22 @@ from core.world import seed_world
 
 
 class EngineTests(unittest.TestCase):
+    def setUp(self):
+        self._old_mode = os.environ.get("SAWAL_LLM_MODE")
+        self._old_strict = os.environ.get("SAWAL_STRICT")
+        os.environ["SAWAL_LLM_MODE"] = "mock"
+        os.environ.pop("SAWAL_STRICT", None)
+
+    def tearDown(self):
+        if self._old_mode is None:
+            os.environ.pop("SAWAL_LLM_MODE", None)
+        else:
+            os.environ["SAWAL_LLM_MODE"] = self._old_mode
+        if self._old_strict is None:
+            os.environ.pop("SAWAL_STRICT", None)
+        else:
+            os.environ["SAWAL_STRICT"] = self._old_strict
+
     def test_ambiguous_send_asks_then_sends_only_to_selected_contact(self):
         world = seed_world()
         session = create_session("Send an email to Priya confirming the lab slot.", world)
@@ -70,9 +87,29 @@ class EngineTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "open-weight"):
             ensure_open_weight_model("closed-provider-model")
 
+    def test_model_prefix_is_normalized(self):
+        self.assertEqual(ensure_open_weight_model("models/gemma-4-31b-it"), "gemma-4-31b-it")
+
     def test_unknown_tool_is_rejected_before_execution(self):
         with self.assertRaisesRegex(ValueError, "not allowlisted"):
             run_tool(seed_world(), {"tool": "shell.exec", "args": {}})
+
+    def test_provenance_groups_and_reversibility_are_additive(self):
+        session = create_session("Send an email to Priya confirming the lab slot.", seed_world())
+        self.assertIn("proposer", session)
+        self.assertEqual(session["proposer"]["kind"], "deterministic_fallback")
+        self.assertIn("groups", session)
+        self.assertTrue(session["groups"])
+        self.assertTrue(all("group_id" in x for x in session["interpretations"]))
+        self.assertTrue(all("reversibility" in x for x in session["interpretations"]))
+        for group in session["groups"]:
+            self.assertEqual(set(group) >= {"id", "size", "effects"}, True)
+            for effect in group["effects"]:
+                self.assertIn(effect["reversibility"], {"reversible", "irreversible"})
+
+    def test_readonly_interpretation_is_marked_readonly(self):
+        session = create_session("Check my calendar for tomorrow afternoon.", seed_world())
+        self.assertTrue(all(x["reversibility"] == "readonly" for x in session["interpretations"]))
 
 
 if __name__ == "__main__":

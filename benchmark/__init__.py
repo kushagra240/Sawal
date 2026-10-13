@@ -1,1 +1,1 @@
-"""Evaluation tasks and measured baseline runner."""
+"""Sawal benchmark package."""
