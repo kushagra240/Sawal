@@ -1,0 +1,169 @@
+{
+  "id": "093c7a6a-d13b-4fe6-8721-9477f3c3d789",
+  "user_id": "guest",
+  "request_text": "Find a quiet spot for team lunch near campus.",
+  "status": "completed",
+  "decision": {
+    "action": "act",
+    "expected_regret": 0,
+    "tau": 0.25,
+    "chosen_group_id": "grp-4f53cda18c",
+    "groups": [
+      {
+        "id": "grp-4f53cda18c",
+        "mass": 1,
+        "interpretation_ids": [
+          "interp-01",
+          "interp-02",
+          "interp-03",
+          "interp-04",
+          "interp-05"
+        ],
+        "canonical_effects": [],
+        "signature": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    ]
+  },
+  "interpretations": [
+    {
+      "id": "interp-01",
+      "rationale": "Searches restaurant options; no booking is made.",
+      "slots": {},
+      "plan": [
+        {
+          "tool": "restaurants.search",
+          "args": {
+            "query": "restaurant"
+          }
+        }
+      ],
+      "signature": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "group_id": "grp-4f53cda18c"
+    },
+    {
+      "id": "interp-02",
+      "rationale": "Searches restaurant options; no booking is made.",
+      "slots": {},
+      "plan": [
+        {
+          "tool": "restaurants.search",
+          "args": {
+            "query": "restaurant"
+          }
+        }
+      ],
+      "signature": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "group_id": "grp-4f53cda18c"
+    },
+    {
+      "id": "interp-03",
+      "rationale": "Searches restaurant options; no booking is made.",
+      "slots": {},
+      "plan": [
+        {
+          "tool": "restaurants.search",
+          "args": {
+            "query": "restaurant"
+          }
+        }
+      ],
+      "signature": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "group_id": "grp-4f53cda18c"
+    },
+    {
+      "id": "interp-04",
+      "rationale": "Searches restaurant options; no booking is made.",
+      "slots": {},
+      "plan": [
+        {
+          "tool": "restaurants.search",
+          "args": {
+            "query": "restaurant"
+          }
+        }
+      ],
+      "signature": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "group_id": "grp-4f53cda18c"
+    },
+    {
+      "id": "interp-05",
+      "rationale": "Searches restaurant options; no booking is made.",
+      "slots": {},
+      "plan": [
+        {
+          "tool": "restaurants.search",
+          "args": {
+            "query": "restaurant"
+          }
+        }
+      ],
+      "signature": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "group_id": "grp-4f53cda18c"
+    }
+  ],
+  "question": null,
+  "result": {
+    "success": true,
+    "executed_plan": [
+      {
+        "tool": "restaurants.search",
+        "args": {
+          "query": "restaurant"
+        }
+      }
+    ],
+    "tool_results": [
+      {
+        "tool": "restaurants.search",
+        "result": {
+          "restaurants": []
+        }
+      }
+    ],
+    "world_diff": {
+      "added": {},
+      "modified": {},
+      "deleted": {}
+    },
+    "message": "Selected plan executed in the mock world."
+  },
+  "trace": [
+    {
+      "id": "trc-c68c81f7",
+      "kind": "INTERPRETATIONS_GENERATED",
+      "payload": {
+        "count": 5,
+        "valid_count": 5
+      },
+      "timestamp": "2026-10-13T06:36:45Z"
+    },
+    {
+      "id": "trc-65035676",
+      "kind": "DRY_RUN_COMPLETED",
+      "payload": {
+        "valid_count": 5,
+        "groups": 1
+      },
+      "timestamp": "2026-10-13T06:36:45Z"
+    },
+    {
+      "id": "trc-dea1db4c",
+      "kind": "REGRET_CALCULATED",
+      "payload": {
+        "expected_regret": 0,
+        "tau": 0.25
+      },
+      "timestamp": "2026-10-13T06:36:45Z"
+    },
+    {
+      "id": "trc-86aa9c27",
+      "kind": "LIVE_EXECUTION_COMPLETED",
+      "payload": {
+        "success": true
+      },
+      "timestamp": "2026-10-13T06:36:45Z"
+    }
+  ],
+  "created_at": "2026-10-13T06:36:45Z",
+  "updated_at": "2026-10-13T06:36:45Z"
+}
