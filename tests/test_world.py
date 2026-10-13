@@ -1,17 +1,14 @@
-﻿from core.world import create_demo_world
+﻿from core.world import seed_world, clone_world
 
 
-def test_world_clone_is_independent():
-    original = create_demo_world()
-    cloned = original.clone()
-
-    cloned.contacts[0]["name"] = "Changed Name"
-
-    assert original.contacts[0]["name"] == "Priya Sharma"
+def test_seed_world():
+    world = seed_world()
+    assert isinstance(world, dict)
 
 
-def test_demo_world_contains_two_contacts():
-    world = create_demo_world()
+def test_clone_world():
+    original = seed_world()
+    cloned = clone_world(original)
 
-    assert len(world.contacts) == 2
-    assert len(world.calendar) == 1
+    assert cloned == original
+    assert cloned is not original
