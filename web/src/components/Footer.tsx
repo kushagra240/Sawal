@@ -11,12 +11,12 @@ interface FooterProps {
 export function Footer({ session, onOpenShortcuts }: FooterProps) {
   // Compute honest commit status
   let commitStatus = "Nothing committed yet";
-  let statusDotColor = "#8A5A0B"; // Amber for uncommitted / pending
+  let statusDotColor = "#734706"; // Amber for uncommitted / pending
 
   if (session?.status === "completed" && session.result?.world_diff) {
     const count = session.result.world_diff.length;
     commitStatus = `${count} change${count === 1 ? "" : "s"} committed`;
-    statusDotColor = "#1F6B4A"; // Green for committed
+    statusDotColor = "#19583D"; // Green for committed
   } else if (!session) {
     commitStatus = "Nothing committed yet";
     statusDotColor = "#6E6253"; // Muted for idle

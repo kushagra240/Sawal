@@ -59,7 +59,7 @@ export function Header({ llmMode, onModeChange, disabled }: HeaderProps) {
             onClick={togglePresenterMode}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-[8px] border transition-all cursor-pointer ${
               presenterMode
-                ? "bg-[#17494D] text-white border-[#17494D]"
+                ? "bg-[#17494D] text-surface border-[#17494D]"
                 : "bg-surface text-[#6E6253] hover:text-[#231B12] border-[#DDD0BA] shadow-sawal-sm"
             }`}
             title="Toggle Presenter Mode (Key: P)"

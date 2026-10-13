@@ -23,7 +23,7 @@ export function DebugPanel({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 z-50 p-2 rounded-full bg-[#17494D] text-white shadow-sawal-md hover:bg-[#0F3639] transition-all cursor-pointer"
+        className="fixed bottom-4 right-4 z-50 p-2 rounded-full bg-[#17494D] text-surface shadow-sawal-md hover:bg-[#0F3639] transition-all cursor-pointer"
         title="Open Debug Panel (?debug=1)"
       >
         <Bug className="w-4 h-4" strokeWidth={1.5} />

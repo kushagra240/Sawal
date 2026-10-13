@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertCircle, GitBranch, Layers, Sparkles } from "lucide-react";
+import { AlertCircle, GitBranch, Layers } from "lucide-react";
 import { Interpretation, OutcomeGroup } from "@/lib/types";
 import { InterpretationCard } from "./InterpretationCard";
 
@@ -22,7 +22,7 @@ export function PlanForks({
     return (
       <div className="w-full rounded-2xl border-2 border-dashed border-indigo-300 dark:border-indigo-800/60 bg-indigo-50/30 dark:bg-indigo-950/20 p-6 sm:p-8 text-center space-y-6">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-sm font-semibold animate-pulse">
-          <Sparkles className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400" />
+          <Layers className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400" />
           <span>Rehearsing 5 readings...</span>
         </div>
 

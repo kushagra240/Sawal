@@ -9,9 +9,23 @@ import { Session } from "@/lib/types";
 
 export default function HistoryPage() {
   const router = useRouter();
-  const { history, clearHistory, setActiveSession } = useSessionContext();
+  const { history, clearHistory, turns, addTurn, setActiveTurnId, setActiveSession } =
+    useSessionContext();
 
-  const handleOpenSession = (sess: Session) => {
+  const handleOpenSession = (sess: Session, entryTimestamp: number) => {
+    const existing = turns.find((t) => t.session?.session_id === sess.session_id);
+    if (existing) {
+      setActiveTurnId(existing.id);
+    } else {
+      const newTurnId = `hist-${sess.session_id}`;
+      addTurn({
+        id: newTurnId,
+        requestText: sess.request_text,
+        session: sess,
+        timestamp: entryTimestamp,
+      });
+      setActiveTurnId(newTurnId);
+    }
     setActiveSession(sess);
     router.push("/");
   };
@@ -41,7 +55,7 @@ export default function HistoryPage() {
           <button
             type="button"
             onClick={clearHistory}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#DDD0BA] bg-surface text-xs font-semibold text-[#A33A2B] hover:bg-[#FBE9E5] transition-colors cursor-pointer shadow-sawal-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#DDD0BA] bg-surface text-xs font-semibold text-[#912D1F] hover:bg-[#FBE9E5] transition-colors cursor-pointer shadow-sawal-sm"
           >
             <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
             <span>Clear history</span>
@@ -62,7 +76,7 @@ export default function HistoryPage() {
           <div className="pt-2">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[8px] bg-[#17494D] text-white text-xs font-semibold hover:bg-[#0F3639] transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[8px] bg-[#17494D] text-surface text-xs font-semibold hover:bg-[#0F3639] transition-colors"
             >
               Try an example request
             </Link>
@@ -81,7 +95,7 @@ export default function HistoryPage() {
             return (
               <div
                 key={session.session_id}
-                onClick={() => handleOpenSession(session)}
+                onClick={() => handleOpenSession(session, timestamp)}
                 className="p-4 sm:p-5 hover:bg-[#F4EBDD] transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
               >
                 <div className="space-y-1 flex-1">
@@ -89,8 +103,8 @@ export default function HistoryPage() {
                     <span
                       className={`px-2 py-0.5 rounded-[4px] font-mono text-[10px] uppercase font-bold tracking-wider ${
                         isAct
-                          ? "bg-[#E7F3EC] text-[#1F6B4A]"
-                          : "bg-[#FBF1DC] text-[#8A5A0B]"
+                          ? "bg-[#E7F3EC] text-[#19583D]"
+                          : "bg-[#FBF1DC] text-[#734706]"
                       }`}
                     >
                       {isAct ? "ACT" : "ASK"}

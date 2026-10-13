@@ -131,11 +131,11 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
       <div className="space-y-1 text-xs text-[#6E6253] font-sans">
         <p className="font-medium text-[#231B12]">
           {isExceeded ? (
-            <span className="text-[#A33A2B] font-bold">
+            <span className="text-[#912D1F] font-bold">
               Threshold exceeded.{" "}
             </span>
           ) : (
-            <span className="text-[#1F6B4A] font-bold">
+            <span className="text-[#19583D] font-bold">
               Below threshold.{" "}
             </span>
           )}
@@ -145,7 +145,7 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
         </p>
 
         {distinctIrreversibleCount > 0 && (
-          <p className="text-[11px] text-[#A33A2B]">
+          <p className="text-[11px] text-[#912D1F]">
             Includes {distinctIrreversibleCount} action(s) that can&apos;t be undone.
           </p>
         )}
@@ -161,7 +161,7 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
           {/* Read only */}
           <div
             className="flex items-center justify-between px-3 py-2 rounded-[6px]"
-            style={{ backgroundColor: "#E7F3EC", color: "#1F6B4A" }}
+            style={{ backgroundColor: "var(--rev-readonly-bg)", color: "var(--rev-readonly-text)" }}
           >
             <div className="flex items-center gap-2 font-medium">
               <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -173,7 +173,7 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
           {/* Can be undone */}
           <div
             className="flex items-center justify-between px-3 py-2 rounded-[6px]"
-            style={{ backgroundColor: "#FBF1DC", color: "#8A5A0B" }}
+            style={{ backgroundColor: "var(--rev-undo-bg)", color: "var(--rev-undo-text)" }}
           >
             <div className="flex items-center gap-2 font-medium">
               <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -185,7 +185,7 @@ export function RegretRiskRuler({ session }: RegretRiskRulerProps) {
           {/* Can't be undone */}
           <div
             className="flex items-center justify-between px-3 py-2 rounded-[6px]"
-            style={{ backgroundColor: "#FBE9E5", color: "#A33A2B" }}
+            style={{ backgroundColor: "var(--rev-cant-bg)", color: "var(--rev-cant-text)" }}
           >
             <div className="flex items-center gap-2 font-semibold">
               <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.5} />

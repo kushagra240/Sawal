@@ -186,7 +186,7 @@ export function QuestionNote({
             type="button"
             disabled={isAnswering}
             onClick={handleConfirm}
-            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-[8px] bg-[#17494D] hover:bg-[#0F3639] text-white text-sm font-semibold shadow-sawal-sm transition-all cursor-pointer disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-[8px] bg-[#17494D] hover:bg-[#0F3639] text-surface text-sm font-semibold shadow-sawal-sm transition-all cursor-pointer disabled:opacity-50"
           >
             {isAnswering ? (
               <>

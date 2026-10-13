@@ -2,87 +2,115 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CompletedCard } from "@/components/CompletedCard";
+import { ChatColumn } from "@/components/ChatColumn";
 import { DebugPanel } from "@/components/DebugPanel";
 import { EmptyState } from "@/components/EmptyState";
-import { ErrorState } from "@/components/ErrorState";
 import { Footer } from "@/components/Footer";
 import { ForkPanel } from "@/components/ForkPanel";
 import { Header } from "@/components/Header";
-import { QuestionNote } from "@/components/QuestionNote";
 import { ReadingsDetailsList } from "@/components/ReadingsDetailsList";
 import { RegretRiskRuler } from "@/components/RegretRiskRuler";
-import { RequestBar } from "@/components/RequestBar";
 import { SentenceLine } from "@/components/SentenceLine";
 import { ShortcutsModal } from "@/components/ShortcutsModal";
+import { WorldStrip } from "@/components/WorldStrip";
 import { answerSession, createSession } from "@/lib/api";
 import { useSessionContext } from "@/lib/sessionContext";
-import { LlmMode, Session } from "@/lib/types";
+import { ChatTurn, LlmMode, Session } from "@/lib/types";
 
 function MainContent() {
   const searchParams = useSearchParams();
   const showDebug = searchParams.get("debug") === "1";
 
-  const { activeSession, setActiveSession, recordSession } = useSessionContext();
+  const {
+    turns,
+    activeTurnId,
+    setActiveTurnId,
+    addTurn,
+    updateTurn,
+    activeSession,
+    setActiveSession,
+    recordSession,
+  } = useSessionContext();
 
-  const [session, setSession] = useState<Session | null>(activeSession);
   const [isLoading, setIsLoading] = useState(false);
   const [isAnswering, setIsAnswering] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [llmMode, setLlmMode] = useState<LlmMode>("live");
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
-  // Highlighting & selection synchronization across columns
+  // Highlighting & selection synchronization between Chat options and Stage ForkPanel
   const [highlightedGroupId, setHighlightedGroupId] = useState<string | null>(null);
   const [selectedOptionGroupId, setSelectedOptionGroupId] = useState<string | null>(null);
 
-  // Sync active session from context if present
-  const [prevActive, setPrevActive] = useState<Session | null>(activeSession);
-  if (activeSession !== prevActive) {
-    setPrevActive(activeSession);
-    setSession(activeSession);
-  }
+  // Active turn on stage
+  const currentActiveTurn =
+    turns.find((t) => t.id === activeTurnId) ||
+    (turns.length > 0 ? turns[turns.length - 1] : null);
 
-  // Keyboard shortcut listener: P, ?, R
+  const displayedSession: Session | null =
+    currentActiveTurn?.session || activeSession;
+
+  // Global Keyboard shortcuts: P (presenter), ? (shortcuts), R (replay)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement?.tagName === "INPUT") return;
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
 
       if (e.key === "?") {
         e.preventDefault();
         setIsShortcutsOpen(true);
       } else if (e.key === "r" || e.key === "R") {
-        if (session) {
+        if (displayedSession) {
           // Re-trigger animation
-          const current = session;
-          setSession(null);
-          setTimeout(() => setSession(current), 50);
+          const cur = displayedSession;
+          setActiveSession(null);
+          setTimeout(() => setActiveSession(cur), 50);
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [session]);
+  }, [displayedSession, setActiveSession]);
 
   const handleRunRequest = async (requestText: string) => {
     setIsLoading(true);
-    setErrorMessage(null);
     setHighlightedGroupId(null);
     setSelectedOptionGroupId(null);
 
+    const turnId = `turn-${Date.now()}`;
+    const newTurn: ChatTurn = {
+      id: turnId,
+      requestText,
+      session: null,
+      isLoading: true,
+      timestamp: Date.now(),
+    };
+    addTurn(newTurn);
+    setActiveTurnId(turnId);
+
     try {
       const result = await createSession(requestText, llmMode);
-      setSession(result);
+      const isFailed = result.status === "failed" && result.error;
+
+      updateTurn(turnId, {
+        session: result,
+        isLoading: false,
+        errorMessage: isFailed ? result.error?.message : null,
+      });
+
       setActiveSession(result);
       recordSession(result);
-
-      if (result.status === "failed" && result.error) {
-        setErrorMessage(result.error.message);
-      }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to execute rehearsal session.";
-      setErrorMessage(msg);
+      const msg =
+        err instanceof Error ? err.message : "Failed to execute rehearsal session.";
+      updateTurn(turnId, {
+        isLoading: false,
+        errorMessage: msg,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -92,18 +120,24 @@ function MainContent() {
     option_id?: string;
     free_text?: string;
   }) => {
-    if (!session) return;
+    if (!displayedSession || !currentActiveTurn) return;
     setIsAnswering(true);
-    setErrorMessage(null);
 
     try {
-      const updated = await answerSession(session.session_id, answer);
-      setSession(updated);
+      const updated = await answerSession(displayedSession.session_id, answer);
+      updateTurn(currentActiveTurn.id, {
+        session: updated,
+        answerText: answer.free_text || answer.option_id,
+        errorMessage: null,
+      });
       setActiveSession(updated);
       recordSession(updated);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to submit disambiguation answer.";
-      setErrorMessage(msg);
+      const msg =
+        err instanceof Error ? err.message : "Failed to submit disambiguation answer.";
+      updateTurn(currentActiveTurn.id, {
+        errorMessage: msg,
+      });
     } finally {
       setIsAnswering(false);
     }
@@ -111,27 +145,17 @@ function MainContent() {
 
   const handleSwitchToReplay = () => {
     setLlmMode("replay");
-    setErrorMessage(null);
-    if (session?.request_text) {
-      handleRunRequest(session.request_text);
+    if (currentActiveTurn?.requestText) {
+      handleRunRequest(currentActiveTurn.requestText);
     }
   };
 
-  // Map option IDs to corresponding group IDs
-  const optionGroupMap: Record<string, string> = {
-    "opt-sharma": "grp-sharma",
-    "opt-kulkarni": "grp-kulkarni",
-    "opt-audi": "grp-audi",
-    "opt-old": "grp-old",
-    "opt-div-1": "grp-div-1",
-    "opt-div-2": "grp-div-2",
-  };
-
-  const hasIrreversibleInGroup = (groupId: string): boolean => {
-    const group = session?.groups.find((g) => g.id === groupId);
-    return group
-      ? group.effects.some((e) => e.reversibility === "irreversible")
-      : true;
+  const handleSelectTurn = (turnId: string) => {
+    setActiveTurnId(turnId);
+    const target = turns.find((t) => t.id === turnId);
+    if (target?.session) {
+      setActiveSession(target.session);
+    }
   };
 
   return (
@@ -143,117 +167,124 @@ function MainContent() {
         disabled={isLoading || isAnswering}
       />
 
-      {/* Main Container */}
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 flex-1">
-        {/* 1. Request Bar */}
-        <section aria-label="Command bar">
-          <RequestBar
-            onRun={handleRunRequest}
-            isLoading={isLoading}
-            initialValue={session?.request_text || ""}
-            activeChipText={session?.request_text || ""}
-          />
-        </section>
-
-        {/* 2. Error State */}
-        {errorMessage && (
-          <ErrorState
-            message={errorMessage}
-            onRetry={() => session?.request_text && handleRunRequest(session.request_text)}
-            onSwitchToReplay={handleSwitchToReplay}
-          />
-        )}
-
-        {/* 3. Empty State (Initial Visit) */}
-        {!session && !isLoading && !errorMessage && <EmptyState />}
-
-        {/* 4. FORK PANEL (In-flight rehearsal or loaded) */}
-        {(isLoading || (session && session.interpretations.length > 0)) && (
-          <ForkPanel
-            session={session}
-            isLoading={isLoading}
-            selectedOptionGroupId={selectedOptionGroupId}
-            highlightedGroupId={highlightedGroupId}
-            onReplayRequest={() => {
-              if (session) {
-                const cur = session;
-                setSession(null);
-                setTimeout(() => setSession(cur), 50);
-              }
-            }}
-          />
-        )}
-
-        {/* 5. Sentence Line (Fraunces italic with underlined accent phrase) */}
-        {!isLoading && session && session.decision && (
-          <SentenceLine session={session} />
-        )}
-
-        {/* 6. Two Columns (Left: QuestionNote / CompletedCard, Right: RegretRiskRuler) */}
-        {!isLoading && session && session.decision && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* LEFT COLUMN: State Dependent (7 Cols) */}
-            <div className="lg:col-span-7 space-y-6">
-              {session.status === "asked" && session.question ? (
-                <QuestionNote
-                  question={session.question}
-                  isAnswering={isAnswering}
-                  onAnswer={handleAnswerQuestion}
-                  onOptionHover={setHighlightedGroupId}
-                  onOptionSelect={setSelectedOptionGroupId}
-                  optionGroupMap={optionGroupMap}
-                  hasIrreversibleInGroup={hasIrreversibleInGroup}
-                />
-              ) : (
-                <CompletedCard
-                  status={session.status}
-                  action={session.decision.action}
-                  result={session.result}
-                  groups={session.groups}
-                  isCommittedAnswer={Boolean(session._chosenGroupId)}
-                />
-              )}
-            </div>
-
-            {/* RIGHT COLUMN: Regret & Risk Ruler (5 Cols) */}
-            <div className="lg:col-span-5">
-              <RegretRiskRuler session={session} />
-            </div>
+      {/* Main Two-Column Assistant Workspace */}
+      <main className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-1">
+        <div className="flex flex-col xl:flex-row gap-6 items-start">
+          {/* LEFT: Assistant Chat Column (400-440px wide at >=1280px, pinned composer at bottom) */}
+          <div className="w-full xl:w-[420px] 2xl:w-[450px] xl:shrink-0 h-[640px] xl:h-[calc(100vh-125px)] xl:sticky xl:top-[68px]">
+            <ChatColumn
+              turns={turns}
+              activeTurnId={currentActiveTurn?.id || null}
+              onSelectTurn={handleSelectTurn}
+              onSendMessage={handleRunRequest}
+              onAnswerQuestion={handleAnswerQuestion}
+              isLoading={isLoading}
+              isAnswering={isAnswering}
+              onOptionHover={setHighlightedGroupId}
+              onOptionSelect={setSelectedOptionGroupId}
+              onRetry={() => {
+                if (currentActiveTurn?.requestText) {
+                  handleRunRequest(currentActiveTurn.requestText);
+                }
+              }}
+              onSwitchToReplay={handleSwitchToReplay}
+            />
           </div>
-        )}
 
-        {/* 7. Collapsible "All readings (N)" Details List */}
-        {!isLoading && session && session.interpretations.length > 0 && (
-          <ReadingsDetailsList
-            interpretations={session.interpretations}
-            highlightedGroupId={highlightedGroupId || selectedOptionGroupId}
-            onHoverReading={setHighlightedGroupId}
-          />
-        )}
+          {/* RIGHT: Rehearsal Stage Column (Fills remaining width, responsive 1280 to 1920px) */}
+          <div className="flex-1 min-w-0 w-full space-y-6">
+            {/* If no session yet and not loading, show Empty Stage */}
+            {!displayedSession && !isLoading && <EmptyState />}
+
+            {/* Rehearsal Fork Panel */}
+            {(isLoading || (displayedSession && displayedSession.interpretations.length > 0)) && (
+              <ForkPanel
+                session={displayedSession}
+                isLoading={isLoading}
+                selectedOptionGroupId={selectedOptionGroupId}
+                highlightedGroupId={highlightedGroupId}
+                onReplayRequest={() => {
+                  if (displayedSession) {
+                    const cur = displayedSession;
+                    setActiveSession(null);
+                    setTimeout(() => setActiveSession(cur), 50);
+                  }
+                }}
+              />
+            )}
+
+            {/* Sentence Line with Fraunces italic & underlined accent phrase */}
+            {!isLoading && displayedSession && displayedSession.decision && (
+              <SentenceLine session={displayedSession} />
+            )}
+
+            {/* Risk Ruler & World Strip Row */}
+            {!isLoading && displayedSession && displayedSession.decision && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Left/Middle: World Strip (7 cols) */}
+                <div className="lg:col-span-6 space-y-4">
+                  <WorldStrip worldDiff={displayedSession.result?.world_diff || []} />
+                </div>
+
+                {/* Right: Regret & Risk Ruler (6 cols) */}
+                <div className="lg:col-span-6">
+                  <RegretRiskRuler session={displayedSession} />
+                </div>
+              </div>
+            )}
+
+            {/* Collapsible 'All readings (N)' Details List (Hidden in Presenter Mode) */}
+            {!isLoading && displayedSession && displayedSession.interpretations.length > 0 && (
+              <div className="hide-in-presenter">
+                <ReadingsDetailsList
+                  interpretations={displayedSession.interpretations}
+                  highlightedGroupId={highlightedGroupId || selectedOptionGroupId}
+                  onHoverReading={setHighlightedGroupId}
+                />
+              </div>
+            )}
+          </div>
+        </div>
       </main>
 
-      {/* Global Footer */}
-      <Footer
-        session={session}
-        onOpenShortcuts={() => setIsShortcutsOpen(true)}
-      />
+      {/* Global Footer (Hidden in Presenter Mode) */}
+      <div className="hide-in-presenter">
+        <Footer
+          session={displayedSession}
+          onOpenShortcuts={() => setIsShortcutsOpen(true)}
+        />
+      </div>
 
-      {/* Shortcuts Modal */}
+      {/* Keyboard Shortcuts Modal */}
       <ShortcutsModal
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
       />
 
-      {/* Debug Panel (when ?debug=1 is active) */}
+      {/* Debug Panel (?debug=1) */}
       {showDebug && (
         <DebugPanel
           onLoadSession={(sess) => {
-            setSession(sess);
+            if (!sess) {
+              setActiveSession(null);
+              return;
+            }
+            const turnId = `debug-${sess.session_id}`;
+            addTurn({
+              id: turnId,
+              requestText: sess.request_text,
+              session: sess,
+              timestamp: 0,
+            });
             setActiveSession(sess);
-            if (sess) recordSession(sess);
+            recordSession(sess);
           }}
           onSetLoading={setIsLoading}
-          onSetError={setErrorMessage}
+          onSetError={(msg) => {
+            if (msg && currentActiveTurn) {
+              updateTurn(currentActiveTurn.id, { errorMessage: msg });
+            }
+          }}
         />
       )}
     </div>
@@ -262,7 +293,13 @@ function MainContent() {
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="p-8 text-xs font-mono text-[#6E6253]">Loading Sawal...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center font-mono text-xs text-[#6E6253]">
+          Loading Sawal workspace...
+        </div>
+      }
+    >
       <MainContent />
     </Suspense>
   );

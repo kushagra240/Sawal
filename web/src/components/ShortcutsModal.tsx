@@ -72,7 +72,7 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 text-xs font-semibold rounded-[8px] bg-[#17494D] text-white hover:bg-[#0F3639] transition-colors cursor-pointer"
+            className="px-4 py-1.5 text-xs font-semibold rounded-[8px] bg-[#17494D] text-surface hover:bg-[#0F3639] transition-colors cursor-pointer"
           >
             Done
           </button>
