@@ -27,3 +27,23 @@ python -m benchmark.runner
 ```
 
 All actions affect only the seeded mock world. This P0 has guest demo mode and in-memory storage; it does not implement production authentication or persistent storage.
+
+
+## Live Gemma ask-or-act demo
+
+On Windows PowerShell:
+
+{fence}powershell
+$env:SAWAL_LLM_MODE="live"
+$env:SAWAL_MODEL="gemma4:e2b"
+$env:OPENAI_BASE_URL="http://localhost:11434/v1"
+$env:SAWAL_LLM_TIMEOUT="90"
+
+.\.venv\Scripts\python.exe -m uvicorn api.main:app --reload --port 8001
+{fence}
+
+For an ambiguous request such as "Send an email to Priya confirming the lab slot.", Sawal rehearses candidate plans first.
+
+If multiple matching contacts exist, it asks which contact the user intended before executing the selected plan.
+
+All write actions in this demo affect only the seeded in-memory mock world. No real email or booking is performed.
