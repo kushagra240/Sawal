@@ -79,7 +79,10 @@ export function ChatColumn({
           </span>
         </div>
         {turns.length > 0 && (
-          <span className="text-[11px] font-mono text-[#6E6253] bg-surface px-2 py-0.5 rounded-[6px] border border-[#DDD0BA]">
+          <span
+            suppressHydrationWarning
+            className="text-[11px] font-mono text-[#6E6253] bg-surface px-2 py-0.5 rounded-[6px] border border-[#DDD0BA]"
+          >
             {turns.length} {turns.length === 1 ? "turn" : "turns"}
           </span>
         )}

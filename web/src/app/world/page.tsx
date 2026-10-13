@@ -42,8 +42,6 @@ export default function WorldPage() {
         .finally(() => {
           if (active) setIsLoadingLive(false);
         });
-    } else {
-      setIsLoadingLive(false);
     }
     return () => {
       active = false;
