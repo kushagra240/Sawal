@@ -74,6 +74,36 @@ class EngineTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not allowlisted"):
             run_tool(seed_world(), {"tool": "shell.exec", "args": {}})
 
+    def test_multi_action_draft_and_expense(self):
+        world = seed_world()
+        session = create_session("Draft a note to the study group and log forty rupees for tea.", world)
+        self.assertEqual(session["status"], "completed")
+        self.assertEqual(session["decision"]["action"], "act")
+        executed = [step["tool"] for step in session["result"]["executed_plan"]]
+        self.assertIn("email.draft", executed)
+        self.assertIn("expenses.log", executed)
+        self.assertEqual(len(world["emails"]), 1)
+        self.assertEqual(world["emails"][0]["status"], "draft")
+        self.assertEqual(len(world["expenses"]), 1)
+        self.assertEqual(world["expenses"][0]["amount"], 40.0)
+
+    def test_seminar_hall_booking(self):
+        world = seed_world()
+        session = create_session("Book the seminar hall for a group meeting.", world)
+        self.assertEqual(session["status"], "completed")
+        self.assertEqual(session["decision"]["action"], "act")
+        executed = [step["tool"] for step in session["result"]["executed_plan"]]
+        self.assertIn("calendar.create_event", executed)
+        # Verify simulated event exists in mock world
+        event = next((e for e in world["calendar_events"] if "Seminar Hall" in e["title"]), None)
+        self.assertIsNotNone(event)
+
+    def test_proposer_provenance_recorded(self):
+        world = seed_world()
+        session = create_session("Check my calendar for tomorrow afternoon.", world)
+        self.assertIn("proposer", session)
+        self.assertIn(session["proposer"], ["deterministic_mock", "replay", "gemma-4-26b-a4b-it"])
+
 
 if __name__ == "__main__":
     unittest.main()

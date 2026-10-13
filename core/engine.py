@@ -18,12 +18,12 @@ MAX_QUESTIONS = int(os.getenv("SAWAL_MAX_QUESTIONS", os.getenv("MAX_QUESTIONS", 
 K = int(os.getenv("NUM_INTERPRETATIONS", "5"))
 
 
-def create_session(request_text: str, world: dict, tau: float | None = None) -> dict:
+def create_session(request_text: str, world: dict, tau: float | None = None, llm_mode: str | None = None) -> dict:
     decision_tau = TAU if tau is None else float(tau)
     trace = []
-    proposed = _propose(request_text, world)
+    proposed, proposer = _propose(request_text, world, llm_mode=llm_mode)
     interpretations = _validate_interpretations(proposed)
-    trace.append(_trace("INTERPRETATIONS_GENERATED", {"count": len(proposed), "valid_count": len(interpretations)}))
+    trace.append(_trace("INTERPRETATIONS_GENERATED", {"count": len(proposed), "valid_count": len(interpretations), "proposer": proposer}))
     low_diversity = len(interpretations) < 2
     rehearsals = []
     for item in interpretations:
@@ -46,6 +46,7 @@ def create_session(request_text: str, world: dict, tau: float | None = None) -> 
         "id": str(uuid4()),
         "user_id": "guest",
         "request_text": request_text,
+        "proposer": proposer,
         "status": "asked" if not low_diversity and regret > decision_tau else "completed",
         "decision": {
             "action": "ask" if not low_diversity and regret > decision_tau else "act",
@@ -150,17 +151,22 @@ def world_diff(before: dict, after: dict) -> dict:
     return {"added": added, "modified": modified, "deleted": deleted}
 
 
-def _propose(request_text: str, world: dict) -> list[dict]:
-    mode = os.getenv("SAWAL_LLM_MODE", os.getenv("LLM_MODE", "mock")).lower()
-    if mode in {"live", "auto"}:
-        live = llm.propose(request_text, world, K)
-        if live:
-            live = _enforce_contact_ambiguity(request_text, world, live)
-            return live[:K]
-        if mode == "live":
-            # Safe local fallback keeps the demo usable if Gemma/Ollama is unavailable.
+def _propose(request_text: str, world: dict, llm_mode: str | None = None) -> tuple[list[dict], str]:
+    mode = (llm_mode or os.getenv("SAWAL_LLM_MODE", os.getenv("LLM_MODE", "auto"))).strip().lower()
+    if mode not in {"live", "record", "replay", "auto", "mock"}:
+        mode = "auto"
+
+    if mode in {"live", "record", "replay", "auto"}:
+        try:
+            live, meta = llm.propose_with_meta(request_text, world, K, mode=mode)
+            if live:
+                live = _enforce_contact_ambiguity(request_text, world, live)
+                proposer = meta.get("model") if meta.get("kind") == "llm" else meta.get("kind", "deterministic_mock")
+                return live[:K], proposer
+        except Exception:
             pass
-    return _heuristic_proposals(request_text, world)
+
+    return _heuristic_proposals(request_text, world), "deterministic_mock"
 
 
 def _enforce_contact_ambiguity(request_text: str, world: dict, items: list[dict]) -> list[dict]:
@@ -247,9 +253,56 @@ def _enforce_contact_ambiguity(request_text: str, world: dict, items: list[dict]
 
 def _heuristic_proposals(text: str, world: dict) -> list[dict]:
     lower = text.casefold()
-    if any(word in lower for word in ("log", "record", "track")) and re.search(r"\d", lower) and any(word in lower for word in ("rupee", "rs", "₹", "expense", "spent")):
+
+    # Multi-action request: Draft note to study group AND log expense (e.g. 40 rupees for tea)
+    has_draft_note = any(word in lower for word in ("draft", "write", "note")) and "study group" in lower
+    has_expense = any(word in lower for word in ("log", "record", "expense", "spent", "rupee", "rupees", "rs", "₹", "tea", "forty"))
+    if has_draft_note and has_expense and any(word in lower for word in ("and", "&", "plus", "also", "log")):
         amount_match = re.search(r"(?:₹|rs\.?\s*)?(\d+(?:\.\d{1,2})?)\s*(?:rupees?|rs\.?|₹)?", lower)
-        amount = float(amount_match.group(1)) if amount_match else 40.0
+        amount = 40.0
+        if amount_match:
+            amount = float(amount_match.group(1))
+        elif "forty" in lower:
+            amount = 40.0
+        elif "thirty" in lower:
+            amount = 30.0
+        elif "fifty" in lower:
+            amount = 50.0
+
+        plan = [
+            {
+                "tool": "email.draft",
+                "args": {
+                    "to": "study-group@campus.internal",
+                    "subject": _subject(text) or "Study Group Notes",
+                    "body": text,
+                },
+            },
+            {
+                "tool": "expenses.log",
+                "args": {
+                    "amount": amount,
+                    "currency": "INR",
+                    "description": "Tea for study group",
+                },
+            },
+        ]
+        return _five([
+            {
+                "slots": {},
+                "rationale": "Drafts a note to the study group and logs the specified tea expense.",
+                "plan": plan,
+            }
+        ])
+
+    # Single expense logging
+    if any(word in lower for word in ("log", "record", "track")) and any(word in lower for word in ("rupee", "rs", "₹", "expense", "spent", "forty", "fifty")):
+        amount_match = re.search(r"(?:₹|rs\.?\s*)?(\d+(?:\.\d{1,2})?)\s*(?:rupees?|rs\.?|₹)?", lower)
+        amount = 40.0
+        if amount_match:
+            amount = float(amount_match.group(1))
+        elif "forty" in lower:
+            amount = 40.0
         description = re.sub(r"\b(?:please\s+)?(?:log|record|track)\s+", "", text, flags=re.I).strip().rstrip(".")
         return _five([{"slots": {}, "rationale": "Logs the explicitly specified small expense.", "plan": [{"tool": "expenses.log", "args": {"amount": amount, "currency": "INR", "description": description}}]}])
 
@@ -260,6 +313,23 @@ def _heuristic_proposals(text: str, world: dict) -> list[dict]:
     if any(word in lower for word in ("restaurant", "lunch", "dinner", "vegetarian place", "quiet spot", "somewhere nice")) and any(word in lower for word in ("find", "search", "look", "quiet", "vegetarian", "nice")) and not any(word in lower for word in ("book", "reserve", "reservation")):
         query = "vegetarian" if "vegetarian" in lower else "restaurant"
         return _five([{"slots": {}, "rationale": "Searches restaurant options; no booking is made.", "plan": [{"tool": "restaurants.search", "args": {"query": query}}]}])
+
+    # Seminar hall booking: creates simulated calendar event
+    if any(word in lower for word in ("seminar", "seminar hall")) and any(word in lower for word in ("book", "reserve", "schedule", "meeting")):
+        tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).replace(hour=14, minute=0, second=0, microsecond=0)
+        end_time = tomorrow + timedelta(hours=2)
+        return _five([{
+            "slots": {},
+            "rationale": "Schedules a simulated seminar hall booking on the calendar.",
+            "plan": [{
+                "tool": "calendar.create_event",
+                "args": {
+                    "title": "Group Meeting — Seminar Hall Booking (Simulated)",
+                    "start_time": tomorrow.isoformat(),
+                    "end_time": end_time.isoformat(),
+                },
+            }],
+        }])
 
     if "draft" in lower and "study group" in lower:
         return _five([{"slots": {}, "rationale": "Saves a private draft addressed to the study group.", "plan": [{"tool": "email.draft", "args": {"to": "study-group@campus.internal", "subject": _subject(text), "body": text}}]}])

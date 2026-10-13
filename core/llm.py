@@ -1,4 +1,4 @@
-﻿"""Hosted/open-weight LLM proposal client for Sawal."""
+"""Hosted/open-weight LLM proposal client for Sawal."""
 
 from __future__ import annotations
 
@@ -37,12 +37,7 @@ def _normalize_model(model: str) -> str:
 
 
 def ensure_open_weight_model(model: str | None = None) -> str:
-    selected = model or os.getenv("GEMMA_MODEL_ID") or os.getenv("SAWAL_MODEL")
-
-    if not selected:
-        raise ValueError(
-            "No model configured. Set GEMMA_MODEL_ID or SAWAL_MODEL."
-        )
+    selected = model or os.getenv("GEMMA_MODEL_ID") or os.getenv("SAWAL_MODEL") or "gemma-4-26b-a4b-it"
 
     selected = _normalize_model(selected)
 
@@ -285,6 +280,24 @@ def _validate_items(parsed: dict | list, count: int) -> list[dict]:
     return valid
 
 
+def _parse_gemini_candidate(raw: dict) -> str:
+    candidates = raw.get("candidates", [])
+    if not candidates:
+        feedback = raw.get("promptFeedback", {})
+        block_reason = feedback.get("blockReason", "No candidates returned")
+        raise RuntimeError(f"Gemini API returned no candidates: {block_reason}")
+    candidate = candidates[0]
+    content = candidate.get("content", {})
+    parts = content.get("parts", [])
+    if not parts:
+        finish_reason = candidate.get("finishReason", "empty")
+        raise RuntimeError(f"Gemini candidate has no parts (finish_reason: {finish_reason})")
+    texts = [p.get("text", "") for p in parts if isinstance(p, dict) and "text" in p]
+    if not texts:
+        raise RuntimeError("No text found in candidate parts.")
+    return "\n".join(texts)
+
+
 def _gemini_call(model: str, prompt: str) -> str:
     api_key = os.getenv("GEMINI_API_KEY")
 
@@ -312,8 +325,19 @@ def _gemini_call(model: str, prompt: str) -> str:
         endpoint=endpoint,
         payload=payload,
         headers={"Content-Type": "application/json"},
-        response_parser=lambda raw: raw["candidates"][0]["content"]["parts"][0]["text"],
+        response_parser=_parse_gemini_candidate,
     )
+
+
+def _parse_openai_candidate(raw: dict) -> str:
+    choices = raw.get("choices", [])
+    if not choices:
+        raise RuntimeError("OpenAI-compatible API returned no choices.")
+    message = choices[0].get("message", {})
+    content = message.get("content")
+    if not content:
+        raise RuntimeError("OpenAI-compatible choice has no content.")
+    return content
 
 
 def _openai_compatible_call(model: str, prompt: str) -> str:
@@ -346,7 +370,7 @@ def _openai_compatible_call(model: str, prompt: str) -> str:
         endpoint=f"{base}/chat/completions",
         payload=payload,
         headers=headers,
-        response_parser=lambda raw: raw["choices"][0]["message"]["content"],
+        response_parser=_parse_openai_candidate,
     )
 
 

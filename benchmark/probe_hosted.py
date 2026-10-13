@@ -1,6 +1,13 @@
+from pathlib import Path
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from core import llm
 from core.world import seed_world
-import time
 
 tests = [
     "Check my calendar for tomorrow afternoon.",

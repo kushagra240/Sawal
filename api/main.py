@@ -87,6 +87,7 @@ async def validation_error_response(request: Request, exc: RequestValidationErro
 
 class CreateSessionRequest(BaseModel):
     request_text: str = Field(min_length=3, max_length=1000)
+    llm_mode: str | None = None
 
 
 class AnswerRequest(BaseModel):
@@ -191,7 +192,7 @@ def update_preferences(req: UpdatePreferencesRequest):
 @router.post("/sessions", status_code=201)
 def create(request_body: CreateSessionRequest, request: Request, response: Response):
     _rate_limit(request)
-    session = create_session(request_body.request_text, world)
+    session = create_session(request_body.request_text, world, llm_mode=request_body.llm_mode)
     sessions[session["id"]] = session
     return _public(session)
 
