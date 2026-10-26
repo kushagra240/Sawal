@@ -1,0 +1,89 @@
+graph TB
+  subgraph UntrustedZone ["Client / Browser Zone (Untrusted)"]
+    direction TB
+    Browser["User Browser / Client App"]
+    NextUI["Next.js Web Frontend (Port 3000)"]
+    Cookie["Client Session Cookie (sawal_user_id)"]
+    NoSecrets["No API Keys / No OAuth Tokens Stored Here"]
+  end
+
+  subgraph Boundary1 ["Trust Boundary 1: Transport & Frontend-Backend Boundary"]
+    direction TB
+    Proxy["Next.js API Rewrite Proxy (/api/:path* -> :8000/:path*)"]
+    RateLimiter["FastAPI In-Memory Rate Limiter (60 req/min/IP)"]
+    CORSMiddleware["FastAPI CORS Policy (Strict Allowed Origins)"]
+  end
+
+  subgraph AppBoundary ["Application / API Service Zone (Trusted Execution)"]
+    direction TB
+    FastAPIApp["FastAPI REST API (:8000)"]
+    UserIsolation["User & Session Isolation Guard (_user_id verification)"]
+    DecisionCore["Ask-or-Act Decision Core (core.engine)"]
+    LiveCoordinator["Live Execution Service (core.live)"]
+    ExactPlanFreeze["Exact Plan Frozen Preview & SHA-256 Key"]
+  end
+
+  subgraph Boundary2 ["Trust Boundary 2: User Confirmation Boundary"]
+    direction TB
+    ExplicitApproval["User Explicit Approval (POST /confirm with idempotency_key)"]
+    ConsequentialGate["Consequential Action Gate (email.send, calendar mutators)"]
+  end
+
+  subgraph ExternalLLMBoundary ["Trust Boundary 3: LLM Provider Egress"]
+    direction TB
+    OutboundTLS1["Outbound HTTPS / TLS 1.3"]
+    Sanitizer["Credential Sanitizer (_sanitize_message: strips API keys & tokens)"]
+    GeminiAPI["Google Gemini API (generativelanguage.googleapis.com)"]
+  end
+
+  subgraph ExternalOAuthBoundary ["Trust Boundary 4: OAuth & External Provider Egress"]
+    direction TB
+    PKCEVerifier["OAuth 2.0 PKCE S256 + 10-Minute Expiring State Verifier"]
+    TokenManager["Server-Side Token Refresh (tokens never sent to browser)"]
+    GoogleAPIs["External Google APIs (Gmail, Calendar, People)"]
+  end
+
+  subgraph DurableStorageBoundary ["Trust Boundary 5: Durable Storage & Secrets Boundary"]
+    direction TB
+    FernetCipher["CredentialCipher (AES-128-CBC + HMAC via Fernet)"]
+    EnvPrecedence["Process Env Precedence over .env"]
+    SQLiteDB[("SQLite Database (.data/sawal.db)")]
+    AuditTrail["Append-Only Audit Log (audit_events table)"]
+    EncryptedCreds["provider_connections table (encrypted_credentials)"]
+    ActionTable["actions table (user_id + idempotency_key UNIQUE)"]
+  end
+
+  %% Connections & Cross-Boundary Flows
+  Browser -->|"HTTP / REST Requests"| Proxy
+  Proxy --> CORSMiddleware
+  CORSMiddleware --> RateLimiter
+  RateLimiter --> FastAPIApp
+
+  FastAPIApp --> UserIsolation
+  UserIsolation --> DecisionCore
+  DecisionCore --> LiveCoordinator
+
+  LiveCoordinator --> ExactPlanFreeze
+  ExactPlanFreeze --> ConsequentialGate
+  ConsequentialGate -->|"Requires User Approval"| Browser
+  Browser -->|"Signs with Idempotency Key"| ExplicitApproval
+  ExplicitApproval --> LiveCoordinator
+
+  DecisionCore -->|"Prompt Request"| Sanitizer
+  Sanitizer --> OutboundTLS1
+  OutboundTLS1 --> GeminiAPI
+
+  LiveCoordinator --> TokenManager
+  TokenManager --> GoogleAPIs
+  FastAPIApp --> PKCEVerifier
+  PKCEVerifier --> GoogleAPIs
+
+  LiveCoordinator --> FernetCipher
+  TokenManager --> FernetCipher
+  FernetCipher --> EncryptedCreds
+  LiveCoordinator --> ActionTable
+  LiveCoordinator --> AuditTrail
+
+  EncryptedCreds --- SQLiteDB
+  ActionTable --- SQLiteDB
+  AuditTrail --- SQLiteDB

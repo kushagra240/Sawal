@@ -58,6 +58,8 @@ High-impact differences such as sending an email carry more weight than reversib
 
 ## System architecture
 
+> Complete architecture diagrams, ask-or-act decision flows, and security trust boundaries are documented in [`docs/architecture/README.md`](docs/architecture/README.md).
+
 ```mermaid
 flowchart TB
     subgraph Client[Next.js web application]
